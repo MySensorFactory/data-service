@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-service-deployment
+  labels:
+    app: data-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: data-service
+  template:
+    metadata:
+      labels:
+        app: data-service
+    spec:
+      containers:
+        - name: data-service
+          imagePullPolicy: Always
+          image: juliantheking/data-service
+          ports:
+            - containerPort: 8080
