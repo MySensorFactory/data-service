@@ -1,7 +1,7 @@
 package com.factory.service;
 
 import com.factory.openapi.model.CountedWords;
-import com.factory.persistence.persistence.CountedWordsRepository;
+import com.factory.persistence.repository.CountedWordsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;

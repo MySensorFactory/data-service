@@ -10,9 +10,6 @@
     </parent>
 
     <packaging>jar</packaging>
-    <properties>
-        <api-store.version>1.0.0</api-store.version>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -36,7 +33,10 @@
         <dependency>
             <groupId>com.factory</groupId>
             <artifactId>api-store</artifactId>
-            <version>${api-store.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.factory</groupId>
+            <artifactId>entity-store</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

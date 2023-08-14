@@ -3,7 +3,7 @@ package com.factory.service;
 import com.factory.exception.ClientErrorException;
 import com.factory.openapi.model.CountedWords;
 import com.factory.openapi.model.Error;
-import com.factory.persistence.persistence.CountedWordsRepository;
+import com.factory.persistence.repository.CountedWordsRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
