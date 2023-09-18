@@ -11,3 +11,10 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: none
+data:
+  sources:
+    temperatureMean: temperature
+    pressureMean: pressure
+    flowRateMean: flowRate
+    gasCompositionMean: gasComposition
+    compressorState: compressorState
