@@ -1,5 +1,6 @@
 package com.factory.service.data;
 
+import com.factory.config.DataSourceConfig;
 import com.factory.domain.EventKey;
 import com.factory.domain.SensorData;
 import com.factory.domain.SensorDataEntry;
@@ -7,7 +8,6 @@ import com.factory.domain.SensorLabel;
 import com.factory.persistence.repository.MeanGasCompositionRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -19,9 +19,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GasCompositionMeanDataSource implements SensorDataSource {
 
-    @Value("${data.sources.gasCompositionMean}")
-    private String sensorType;
-
+    private final DataSourceConfig dataSourceConfig;
     private final MeanGasCompositionRepository meanGasCompositionRepository;
     private final ModelMapper modelMapper;
 
@@ -32,13 +30,14 @@ public class GasCompositionMeanDataSource implements SensorDataSource {
         return SensorData.builder()
                 .from(modelMapper.map(from, Long.class))
                 .to(modelMapper.map(to, Long.class))
-                .sensorType(sensorType)
+                .sensorType(getSensorType())
                 .label(label.getLabel())
                 .entries(meanGasCompositionRepository.findByTimeWindowAndLabel(label.getLabel(), from, to)
                         .stream()
                         .map(sd -> SensorDataEntry.builder()
                                 .eventKey(sd.getAuditData().getEventKey())
                                 .label(sd.getAuditData().getLabel())
+                                .sensorType(getSensorType())
                                 .timestamp(modelMapper.map(sd.getAuditData().getTimestamp(), Long.class))
                                 .data(Map.of(
                                         "co2", sd.getCo2(),
@@ -54,6 +53,6 @@ public class GasCompositionMeanDataSource implements SensorDataSource {
 
     @Override
     public String getSensorType() {
-        return sensorType;
+        return dataSourceConfig.getDataSources().get("gasCompositionMean").getSensorType();
     }
 }

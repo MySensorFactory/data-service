@@ -1,5 +1,6 @@
 package com.factory.service.data;
 
+import com.factory.config.DataSourceConfig;
 import com.factory.domain.EventKey;
 import com.factory.domain.SensorData;
 import com.factory.domain.SensorDataEntry;
@@ -7,7 +8,6 @@ import com.factory.domain.SensorLabel;
 import com.factory.persistence.repository.MeanPressureRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -19,9 +19,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PressureMeanDataSource implements SensorDataSource {
 
-    @Value("${data.sources.pressureMean}")
-    private String sensorType;
-
+    private final DataSourceConfig dataSourceConfig;
     private final MeanPressureRepository meanPressureRepository;
     private final ModelMapper modelMapper;
 
@@ -32,7 +30,7 @@ public class PressureMeanDataSource implements SensorDataSource {
         return SensorData.builder()
                 .from(modelMapper.map(from, Long.class))
                 .to(modelMapper.map(to, Long.class))
-                .sensorType(sensorType)
+                .sensorType(getSensorType())
                 .label(label.getLabel())
                 .entries(meanPressureRepository.findByTimeWindowAndLabel(label.getLabel(), from, to)
                         .stream()
@@ -51,6 +49,6 @@ public class PressureMeanDataSource implements SensorDataSource {
 
     @Override
     public String getSensorType() {
-        return sensorType;
+        return dataSourceConfig.getDataSources().get("pressureMean").getSensorType();
     }
 }
