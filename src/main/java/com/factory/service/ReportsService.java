@@ -3,6 +3,7 @@ package com.factory.service;
 import com.factory.domain.SensorLabel;
 import com.factory.domain.SensorType;
 import com.factory.exception.ClientErrorException;
+import com.factory.mapping.CollectionMapper;
 import com.factory.openapi.model.CreateReportRequest;
 import com.factory.openapi.model.CreateReportResponse;
 import com.factory.openapi.model.Error;
@@ -12,6 +13,7 @@ import com.factory.openapi.model.GetSingleReportResponse;
 import com.factory.openapi.model.TimeRange;
 import com.factory.persistence.entity.Report;
 import com.factory.persistence.repository.ReportsRepository;
+import com.factory.validation.SensorTypeLabelsValidator;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -28,9 +30,12 @@ public class ReportsService {
     private final ReportsRepository reportsRepository;
     private final SensorsService sensorsService;
     private final ModelMapper modelMapper;
+    private final CollectionMapper collectionMapper;
+    private final SensorTypeLabelsValidator sensorTypeLabelsValidator;
 
     @Transactional
     public CreateReportResponse createReports(final CreateReportRequest createReportRequest) {
+        sensorTypeLabelsValidator.validate(collectionMapper.stringMapToSensorTypeLabelMap(createReportRequest.getSensorLabels()));
         var report = modelMapper.map(createReportRequest, Report.class);
         var result = reportsRepository.save(report);
         return modelMapper.map(result, CreateReportResponse.class);
@@ -63,13 +68,14 @@ public class ReportsService {
                 modelMapper.map(from, ZonedDateTime.class),
                 modelMapper.map(to, ZonedDateTime.class)
         );
-        return modelMapper.map(result, GetReportListResponse.class);
+        return collectionMapper.reportListToDto(result);
     }
 
     public GetSingleReportResponse getSingleReports(final Long from,
                                                     final Long to,
                                                     final String label,
                                                     final String sensorType) {
+        sensorTypeLabelsValidator.validate(SensorType.of(sensorType), SensorLabel.of(label));
         var data = sensorsService.getSingleReports(from, to, SensorLabel.of(label), SensorType.of(sensorType));
         return modelMapper.map(data, GetSingleReportResponse.class);
     }
