@@ -1,4 +1,4 @@
-package com.factory.config;
+package com.factory.mapping;
 
 import com.factory.domain.EventKey;
 import com.factory.domain.ReportData;
@@ -7,7 +7,6 @@ import com.factory.domain.SensorDataEntry;
 import com.factory.domain.SensorType;
 import com.factory.openapi.model.CreateReportRequest;
 import com.factory.openapi.model.GetReportDetailsResponse;
-import com.factory.openapi.model.GetReportListResponse;
 import com.factory.openapi.model.GetSingleReportResponse;
 import com.factory.openapi.model.InstantData;
 import com.factory.openapi.model.ReportPreview;
@@ -24,7 +23,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -40,7 +38,6 @@ public class ModelMapperConfig {
         mapper.addConverter(createReportRequestReportConverter(mapper));
         mapper.addConverter(createReportReportPreviewConverter(mapper));
         mapper.addConverter(createSensorDataGetSingleReportResponseConverter());
-        mapper.addConverter(createListGetReportListResponseConverter(mapper));
         mapper.addConverter(createInstantDataGetReportDetailsResponseConverter());
         return mapper;
     }
@@ -114,22 +111,6 @@ public class ModelMapperConfig {
         };
     }
 
-    private static Converter<List<Report>, GetReportListResponse> createListGetReportListResponseConverter(final ModelMapper modelMapper) {
-        return new AbstractConverter<>() {
-            @Override
-            public GetReportListResponse convert(final List<Report> input) {
-                if (Objects.nonNull(input)) {
-                    return GetReportListResponse.builder()
-                            .results(input.stream()
-                                    .map(r -> modelMapper.map(r, ReportPreview.class))
-                                    .toList())
-                            .build();
-                }
-                return null;
-            }
-        };
-    }
-
     private static Converter<ReportData, GetReportDetailsResponse> createInstantDataGetReportDetailsResponseConverter() {
         return new AbstractConverter<>() {
             @Override
@@ -173,7 +154,6 @@ public class ModelMapperConfig {
             }
         };
     }
-
 
     private static Converter<SensorData, GetSingleReportResponse> createSensorDataGetSingleReportResponseConverter() {
         return new AbstractConverter<>() {
