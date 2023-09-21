@@ -12,9 +12,19 @@ spring:
     hibernate:
       ddl-auto: none
 data:
-  sources:
-    temperatureMean: temperature
-    pressureMean: pressure
-    flowRateMean: flowRate
-    gasCompositionMean: gasComposition
-    compressorState: compressorState
+  dataSources:
+    temperatureMean:
+      sensorType: temperatureMean
+      availableLabels: [ BeforeBoiler, AfterBoiler, Return, Begin ]
+    pressureMean:
+      sensorType: pressureMean
+      availableLabels: [ AfterReturnCompressor, BeforeReturnCompressor, AfterBeginCompressor, BeforeBeginCompressor ]
+    flowRateMean:
+      sensorType: flowRateMean
+      availableLabels: [ CompressedReturn, NotCompressedReturn, Input, Output ]
+    gasCompositionMean:
+      sensorType: gasCompositionMean
+      availableLabels: [ Begin, Input, Output, Return ]
+    compressorState:
+      sensorType: compressorState
+      availableLabels: [ ReturnCompressor, BeginCompressor ]
