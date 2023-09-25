@@ -5,7 +5,7 @@ import com.factory.domain.EventKey;
 import com.factory.domain.SensorData;
 import com.factory.domain.SensorDataEntry;
 import com.factory.domain.SensorLabel;
-import com.factory.persistence.repository.CompressorStateRepository;
+import com.factory.persistence.data.repository.CompressorStateRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;

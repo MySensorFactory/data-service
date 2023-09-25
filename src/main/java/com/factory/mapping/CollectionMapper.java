@@ -4,7 +4,7 @@ import com.factory.domain.SensorLabel;
 import com.factory.domain.SensorType;
 import com.factory.openapi.model.GetReportListResponse;
 import com.factory.openapi.model.ReportPreview;
-import com.factory.persistence.entity.Report;
+import com.factory.persistence.data.entity.Report;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
