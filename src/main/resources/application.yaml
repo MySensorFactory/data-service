@@ -1,8 +1,8 @@
 server:
-  port: 9099
+  port: 8080
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/compose-postgres
+    url: jdbc:postgresql://database-svc:5432/compose-postgres
     username: compose-postgres
     password: compose-postgres
   jpa:
