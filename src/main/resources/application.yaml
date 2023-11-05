@@ -2,9 +2,9 @@ server:
   port: 8080
 spring:
   datasource:
-    url: jdbc:postgresql://database-svc:5432/compose-postgres
-    username: compose-postgres
-    password: compose-postgres
+    url: jdbc:postgresql://database-svc:5432/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
   jpa:
     properties:
       hibernate:

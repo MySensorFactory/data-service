@@ -21,3 +21,19 @@ spec:
           image: juliantheking/data-service
           ports:
             - containerPort: 8080
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: db-credentials
+                  key: POSTRGES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: db-credentials
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: db-credentials
+                  key: POSTGRES_PASSWORD
