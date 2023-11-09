@@ -1,6 +1,7 @@
 package com.factory.domain;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor(staticName = "of")
 @EqualsAndHashCode
 @NoArgsConstructor
+@Builder
 public class SensorLabel {
     private String label;
 }
