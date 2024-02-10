@@ -20,6 +20,7 @@ phases:
             - sudo apt install python3-pip -y
             - pip3 install kubernetes
             - pip3 install boto3
+            - pip3 install pydantic
     pre_build:
         commands:
             - echo "Fetching repository token ..."
