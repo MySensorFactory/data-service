@@ -1,11 +1,7 @@
 package com.factory.controller;
 
 import com.factory.openapi.api.ReportsApi;
-import com.factory.openapi.model.CreateReportRequest;
-import com.factory.openapi.model.CreateReportResponse;
-import com.factory.openapi.model.GetReportDetailsResponse;
-import com.factory.openapi.model.GetReportListResponse;
-import com.factory.openapi.model.GetSingleReportResponse;
+import com.factory.openapi.model.*;
 import com.factory.service.ReportsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,14 +23,13 @@ public class ReportsController implements ReportsApi {
     }
 
     @Override
-    public ResponseEntity<GetReportDetailsResponse> getReportDetails(final UUID id) {
-        return ResponseEntity.ok(reportsService.getReportDetails(id));
+    public ResponseEntity<Void> deleteReport(final UUID id) {
+        return null;
     }
 
     @Override
-    public ResponseEntity<GetReportListResponse> getReportsList(@NotNull @Valid final Long from,
-                                                                @NotNull @Valid final Long to) {
-        return ResponseEntity.ok(reportsService.getReportsList(from, to));
+    public ResponseEntity<GetReportDetailsResponse> getReportDetails(final UUID id) {
+        return ResponseEntity.ok(reportsService.getReportDetails(id));
     }
 
     @Override
@@ -43,5 +38,15 @@ public class ReportsController implements ReportsApi {
                                                                     final String label,
                                                                     final String sensorType) {
         return ResponseEntity.ok(reportsService.getSingleReports(from, to, label, sensorType));
+    }
+
+    @Override
+    public ResponseEntity<GetReportListResponse> searchReports(@Valid final SearchReportsRequest searchReportsRequest) {
+        return null;
+    }
+
+    @Override
+    public ResponseEntity<CreateReportRequest> updateReport(final UUID id) {
+        return null;
     }
 }

@@ -12,5 +12,7 @@ public class ReportData {
     private UUID id;
     private Long from;
     private Long to;
+    private String name;
+    private String description;
     private Map<SensorType, Map<EventKey,SensorDataEntry>> sensorsInstantEntries;
 }
