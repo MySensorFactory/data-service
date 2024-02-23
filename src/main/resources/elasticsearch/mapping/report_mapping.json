@@ -1,0 +1,54 @@
+{
+  "dynamic": "false",
+  "properties": {
+    "id": {
+      "type": "keyword"
+    },
+    "label": {
+      "type": "keyword",
+      "normalizer": "lowercase_normalizer"
+    },
+    "name": {
+      "type": "text",
+      "fields": {
+        "lowercase": {
+          "type": "text",
+          "normalizer": "lowercase_normalizer"
+        }
+      }
+    },
+    "description": {
+      "type": "text",
+      "fields": {
+        "lowercase": {
+          "type": "text",
+          "normalizer": "lowercase_normalizer"
+        }
+      }
+    },
+    "from": {
+      "type": "date",
+      "format": "yyyy-MM-dd'T'HH:mm:ssZ"
+    },
+    "to": {
+      "type": "date",
+      "format": "yyyy-MM-dd'T'HH:mm:ssZ"
+    },
+    "reportSensorLabels": {
+      "type": "nested",
+      "properties": {
+        "id": {
+          "type": "keyword"
+        },
+        "sensorType": {
+          "type": "keyword",
+          "normalizer": "lowercase_normalizer"
+        },
+        "label": {
+          "type": "keyword",
+          "normalizer": "lowercase_normalizer"
+        }
+      }
+    }
+  }
+}

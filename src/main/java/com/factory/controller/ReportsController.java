@@ -41,7 +41,9 @@ public class ReportsController implements ReportsApi {
     }
 
     @Override
-    public ResponseEntity<GetReportListResponse> searchReports(@Valid final SearchReportsRequest searchReportsRequest) {
+    public ResponseEntity<GetReportListResponse> searchReports(@NotNull @Valid final Long from,
+                                                               @NotNull @Valid final Long to,
+                                                               @Valid final SearchReportsRequest searchReportsRequest) {
         return null;
     }
 

@@ -12,6 +12,7 @@ import java.util.Date;
 @Getter
 @Setter
 @Setting(settingPath = "/elasticsearch/settings/lowercase_normalizer.json")
+@Mapping(mappingPath = "/elasticsearch/mapping/report_mapping.json")
 public class ReportDataEsModel {
 
     public static final String LOWER_CASE_NORMALIZER = "lower_case_normalizer";
@@ -34,5 +35,7 @@ public class ReportDataEsModel {
     @Field(type = FieldType.Date, format = DateFormat.epoch_millis)
     private Date to;
 
+    @Field(type = FieldType.Nested)
+    private ReportSensorLabelEsModel reportSensorLabels;
 
 }

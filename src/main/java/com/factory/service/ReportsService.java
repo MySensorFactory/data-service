@@ -13,6 +13,7 @@ import com.factory.openapi.model.GetSingleReportResponse;
 import com.factory.openapi.model.TimeRange;
 import com.factory.persistence.data.entity.Report;
 import com.factory.persistence.data.repository.ReportsRepository;
+import com.factory.persistence.elasticsearch.repository.ReportsEsRepository;
 import com.factory.validation.SensorTypeLabelsValidator;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -32,6 +33,7 @@ public class ReportsService {
     private final ModelMapper modelMapper;
     private final CollectionMapper collectionMapper;
     private final SensorTypeLabelsValidator sensorTypeLabelsValidator;
+    private final ReportsEsRepository reportsEsRepository;
 
     @Transactional
     public CreateReportResponse createReports(final CreateReportRequest createReportRequest) {
