@@ -1,19 +1,18 @@
 {
-  "dynamic": "false",
   "properties": {
     "id": {
       "type": "keyword"
     },
     "label": {
       "type": "keyword",
-      "normalizer": "lowercase_normalizer"
+      "normalizer": "lower_case_normalizer"
     },
     "name": {
       "type": "text",
       "fields": {
         "lowercase": {
           "type": "text",
-          "normalizer": "lowercase_normalizer"
+          "analyzer": "lower_case_analyzer"
         }
       }
     },
@@ -22,7 +21,7 @@
       "fields": {
         "lowercase": {
           "type": "text",
-          "normalizer": "lowercase_normalizer"
+          "analyzer": "lower_case_analyzer"
         }
       }
     },
@@ -42,11 +41,11 @@
         },
         "sensorType": {
           "type": "keyword",
-          "normalizer": "lowercase_normalizer"
+          "normalizer": "lower_case_normalizer"
         },
         "label": {
           "type": "keyword",
-          "normalizer": "lowercase_normalizer"
+          "normalizer": "lower_case_normalizer"
         }
       }
     }

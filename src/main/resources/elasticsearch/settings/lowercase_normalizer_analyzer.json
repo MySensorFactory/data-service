@@ -1,0 +1,22 @@
+{
+  "analysis": {
+    "normalizer": {
+      "lower_case_normalizer": {
+        "type": "custom",
+        "char_filter": [],
+        "filter": [
+          "lowercase"
+        ]
+      }
+    },
+    "analyzer": {
+      "lower_case_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": [
+          "lowercase"
+        ]
+      }
+    }
+  }
+}
