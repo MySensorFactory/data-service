@@ -4,15 +4,11 @@ import com.factory.domain.SensorLabel;
 import com.factory.domain.SensorType;
 import com.factory.exception.ClientErrorException;
 import com.factory.mapping.CollectionMapper;
-import com.factory.openapi.model.CreateReportRequest;
-import com.factory.openapi.model.CreateReportResponse;
 import com.factory.openapi.model.Error;
-import com.factory.openapi.model.GetReportDetailsResponse;
-import com.factory.openapi.model.GetReportListResponse;
-import com.factory.openapi.model.GetSingleReportResponse;
-import com.factory.openapi.model.TimeRange;
+import com.factory.openapi.model.*;
 import com.factory.persistence.data.entity.Report;
 import com.factory.persistence.data.repository.ReportsRepository;
+import com.factory.persistence.elasticsearch.model.ReportDataEsModel;
 import com.factory.persistence.elasticsearch.repository.ReportsEsRepository;
 import com.factory.validation.SensorTypeLabelsValidator;
 import lombok.RequiredArgsConstructor;
@@ -36,18 +32,17 @@ public class ReportsService {
     private final ReportsEsRepository reportsEsRepository;
 
     @Transactional
-    public CreateReportResponse createReports(final CreateReportRequest createReportRequest) {
-        sensorTypeLabelsValidator.validate(collectionMapper.stringMapToSensorTypeLabelMap(createReportRequest.getSensorLabels()));
-        var report = modelMapper.map(createReportRequest, Report.class);
+    public UpsertReportResponse createReports(final UpsertReportRequest request) {
+        validateUpsertReportRequest(request);
+        var report = modelMapper.map(request, Report.class);
         var result = reportsRepository.save(report);
-        return modelMapper.map(result, CreateReportResponse.class);
+        saveReportToEsRepository(result.getId(), request);
+        return modelMapper.map(result, UpsertReportResponse.class);
     }
 
     @Transactional
     public GetReportDetailsResponse getReportDetails(final UUID reportId) {
-        var report = reportsRepository.findById(reportId)
-                .orElseThrow(() -> new ClientErrorException(Error.CodeEnum.NOT_FOUND.toString(),
-                        "Report with id " + reportId + " not found"));
+        var report = getReport(reportId);
         var instantData = sensorsService.getSensorsData(
                 report.getFrom(),
                 report.getTo(),
@@ -80,5 +75,43 @@ public class ReportsService {
         sensorTypeLabelsValidator.validate(SensorType.of(sensorType), SensorLabel.of(label));
         var data = sensorsService.getSingleReports(from, to, SensorLabel.of(label), SensorType.of(sensorType));
         return modelMapper.map(data, GetSingleReportResponse.class);
+    }
+
+    @Transactional
+    public void deleteReport(final UUID id) {
+        reportsRepository.deleteById(id);
+        reportsEsRepository.deleteById(id.toString());
+    }
+
+    public GetReportListResponse searchForReports(final SearchReportsRequest request) {
+        return null;
+    }
+
+    @Transactional
+    public UpsertReportResponse updateReport(final UUID id, final UpsertReportRequest request) {
+        validateUpsertReportRequest(request);
+        var newReport = modelMapper.map(request, Report.class);
+        var oldReport = getReport(id);
+        oldReport.update(newReport, () -> reportsRepository.saveAndFlush(oldReport));
+        var result = saveReportToEsRepository(id, request);
+        return UpsertReportResponse.builder()
+                .id(UUID.fromString(result.getId()))
+                .build();
+    }
+
+    private ReportDataEsModel saveReportToEsRepository(UUID id, UpsertReportRequest request) {
+        var esModel = modelMapper.map(request, ReportDataEsModel.class);
+        esModel.setId(id.toString());
+        return reportsEsRepository.save(esModel);
+    }
+
+    private Report getReport(UUID reportId) {
+        return reportsRepository.findById(reportId)
+                .orElseThrow(() -> new ClientErrorException(Error.CodeEnum.NOT_FOUND.toString(),
+                        "Report with id " + reportId + " not found"));
+    }
+
+    private void validateUpsertReportRequest(UpsertReportRequest request) {
+        sensorTypeLabelsValidator.validate(collectionMapper.stringMapToSensorTypeLabelMap(request.getSensorLabels()));
     }
 }

@@ -1,18 +1,12 @@
 package com.factory.mapping;
 
-import com.factory.domain.EventKey;
-import com.factory.domain.ReportData;
 import com.factory.domain.SensorData;
-import com.factory.domain.SensorDataEntry;
-import com.factory.domain.SensorType;
-import com.factory.openapi.model.CreateReportRequest;
-import com.factory.openapi.model.GetReportDetailsResponse;
-import com.factory.openapi.model.GetSingleReportResponse;
-import com.factory.openapi.model.InstantData;
-import com.factory.openapi.model.ReportPreview;
-import com.factory.openapi.model.TimeRange;
+import com.factory.domain.*;
+import com.factory.openapi.model.*;
 import com.factory.persistence.data.entity.Report;
 import com.factory.persistence.data.entity.ReportSensorLabel;
+import com.factory.persistence.elasticsearch.model.ReportDataEsModel;
+import com.factory.persistence.elasticsearch.model.ReportSensorLabelEsModel;
 import org.modelmapper.AbstractConverter;
 import org.modelmapper.Converter;
 import org.modelmapper.ModelMapper;
@@ -39,6 +33,7 @@ public class ModelMapperConfig {
         mapper.addConverter(createReportReportPreviewConverter(mapper));
         mapper.addConverter(createSensorDataGetSingleReportResponseConverter());
         mapper.addConverter(createInstantDataGetReportDetailsResponseConverter());
+        mapper.addConverter(createReportDataEsModelReportConverter(mapper));
         return mapper;
     }
 
@@ -67,15 +62,17 @@ public class ModelMapperConfig {
         };
     }
 
-    private static Converter<CreateReportRequest, Report> createReportRequestReportConverter(final ModelMapper mapper) {
+    private static Converter<UpsertReportRequest, Report> createReportRequestReportConverter(final ModelMapper mapper) {
         return new AbstractConverter<>() {
             @Override
-            public Report convert(final CreateReportRequest input) {
+            public Report convert(final UpsertReportRequest input) {
                 if (Objects.nonNull(input)) {
                     var result = new Report();
                     result.setFrom(mapper.map(input.getTimeRange().getFrom(), ZonedDateTime.class));
                     result.setTo(mapper.map(input.getTimeRange().getTo(), ZonedDateTime.class));
                     result.setLabel(input.getLabel());
+                    result.setDescription(input.getDescription());
+                    result.setName(input.getName());
                     result.setReportSensorLabels(input.getSensorLabels().entrySet().stream()
                             .map(entry -> {
                                 var sensorLabel = new ReportSensorLabel();
@@ -179,4 +176,30 @@ public class ModelMapperConfig {
             }
         };
     }
+
+    private static Converter<UpsertReportRequest,ReportDataEsModel> createReportDataEsModelReportConverter(final ModelMapper modelMapper) {
+        return new AbstractConverter<>() {
+            @Override
+            public ReportDataEsModel convert(final UpsertReportRequest input) {
+                if (Objects.nonNull(input)) {
+                    return ReportDataEsModel.builder()
+                            .name(input.getName())
+                            .description(input.getDescription())
+                            .from(modelMapper.map(input.getTimeRange().getFrom(),ZonedDateTime.class))
+                            .to(modelMapper.map(input.getTimeRange().getTo(), ZonedDateTime.class))
+                            .label(input.getLabel())
+                            .reportSensorLabels(input.getSensorLabels().entrySet().stream()
+                                    .map(sl -> ReportSensorLabelEsModel.builder()
+                                            .sensorType(sl.getKey())
+                                            .label(sl.getValue())
+                                            .build())
+                                    .toList()
+                            )
+                            .build();
+                }
+                return null;
+            }
+        };
+    }
+
 }

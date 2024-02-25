@@ -1,7 +1,6 @@
 package com.factory.persistence.elasticsearch.model;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
@@ -9,6 +8,9 @@ import static com.factory.persistence.elasticsearch.model.ReportDataEsModel.LOWE
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ReportSensorLabelEsModel {
     private String id;
 

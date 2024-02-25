@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import java.net.URI;
 import java.util.UUID;
 
 @RestController
@@ -18,13 +19,14 @@ public class ReportsController implements ReportsApi {
     private final ReportsService reportsService;
 
     @Override
-    public ResponseEntity<CreateReportResponse> createReport(@Valid final CreateReportRequest createReportRequest) {
-        return ResponseEntity.ok(reportsService.createReports(createReportRequest));
+    public ResponseEntity<UpsertReportResponse> createReport(@Valid final UpsertReportRequest request) {
+        return ResponseEntity.created(URI.create("")).body(reportsService.createReports(request));
     }
 
     @Override
     public ResponseEntity<Void> deleteReport(final UUID id) {
-        return null;
+        reportsService.deleteReport(id);
+        return ResponseEntity.noContent().build();
     }
 
     @Override
@@ -41,14 +43,12 @@ public class ReportsController implements ReportsApi {
     }
 
     @Override
-    public ResponseEntity<GetReportListResponse> searchReports(@NotNull @Valid final Long from,
-                                                               @NotNull @Valid final Long to,
-                                                               @Valid final SearchReportsRequest searchReportsRequest) {
-        return null;
+    public ResponseEntity<GetReportListResponse> searchReports(@Valid SearchReportsRequest request) {
+        return ResponseEntity.ok(reportsService.searchForReports(request));
     }
 
     @Override
-    public ResponseEntity<CreateReportRequest> updateReport(final UUID id) {
-        return null;
+    public ResponseEntity<UpsertReportResponse> updateReport(final UUID id, final UpsertReportRequest request) {
+        return ResponseEntity.ok(reportsService.updateReport(id,request));
     }
 }
