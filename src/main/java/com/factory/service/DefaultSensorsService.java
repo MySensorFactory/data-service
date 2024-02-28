@@ -10,6 +10,7 @@ import com.factory.service.data.SensorDataSourceResolver;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -30,31 +31,27 @@ public class DefaultSensorsService implements SensorsService {
                                      final ZonedDateTime to,
                                      final Map<SensorType, SensorLabel> sensorLabels) {
 
-        if (sensorLabels.isEmpty()) {
+        if (CollectionUtils.isEmpty(sensorLabels)) {
             return getEmptyReport();
         }
 
         var input = findWindowedData(from, to, sensorLabels);
 
-        if (input.isEmpty()) {
+        if (CollectionUtils.isEmpty(input)) {
             return getEmptyReport();
         }
 
         var result = initResult(sensorLabels);
         var singleDataSet = getAllDataFromRandomSensorType(input, sensorLabels);
 
-        if (singleDataSet.isEmpty()) {
+        if (CollectionUtils.isEmpty(singleDataSet)) {
             return getEmptyReport();
         }
 
-        for (var sensorData : copySingleDataSet(singleDataSet)) {
-
-            var eventKey = sensorData.getKey();
-
-            if (isEventKeyPresentInAllSensorEntityData(input, eventKey)) {
-                moveSensorDataEntriesWithGivenEventKeyFromInputToResult(sensorLabels, input, result, eventKey);
-            }
-        }
+        copySingleDataSet(singleDataSet).stream()
+                .map(Map.Entry::getKey)
+                .filter(eventKey -> isEventKeyPresentInAllSensorEntityData(input, eventKey))
+                .forEach(eventKey -> moveSensorDataEntriesWithGivenEventKeyFromInputToResult(sensorLabels, input, result, eventKey));
 
         return result;
     }

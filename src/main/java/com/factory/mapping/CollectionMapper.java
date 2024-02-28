@@ -5,6 +5,7 @@ import com.factory.domain.SensorType;
 import com.factory.openapi.model.GetReportListResponse;
 import com.factory.openapi.model.ReportPreview;
 import com.factory.persistence.data.entity.Report;
+import com.factory.persistence.data.entity.ReportSensorLabel;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,5 +41,13 @@ public class CollectionMapper {
                             entry -> SensorLabel.of(entry.getValue())));
         }
         return Map.of();
+    }
+
+    public Map<SensorType, SensorLabel> decomposeReportSensorLabelToMap(final Set<ReportSensorLabel> reportSensorLabels) {
+        return reportSensorLabels.stream()
+                .collect(Collectors.toMap(
+                        lbl -> SensorType.of(lbl.getSensorType()),
+                        lbl -> SensorLabel.of(lbl.getLabel())
+                ));
     }
 }

@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -46,11 +45,7 @@ public class ReportsService {
         var instantData = sensorsService.getSensorsData(
                 report.getFrom(),
                 report.getTo(),
-                report.getReportSensorLabels().stream()
-                        .collect(Collectors.toMap(
-                                lbl -> SensorType.of(lbl.getSensorType()),
-                                lbl -> SensorLabel.of(lbl.getLabel())
-                        )));
+                collectionMapper.decomposeReportSensorLabelToMap(report.getReportSensorLabels()));
         var result = modelMapper.map(instantData, GetReportDetailsResponse.class);
         result.setId(reportId);
         result.setTimeRange(TimeRange.builder()
