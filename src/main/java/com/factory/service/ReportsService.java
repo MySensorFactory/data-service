@@ -1,5 +1,6 @@
 package com.factory.service;
 
+import com.factory.domain.Filter;
 import com.factory.domain.SensorLabel;
 import com.factory.domain.SensorType;
 import com.factory.exception.ClientErrorException;
@@ -13,10 +14,15 @@ import com.factory.persistence.elasticsearch.repository.ReportsEsRepository;
 import com.factory.validation.SensorTypeLabelsValidator;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -40,6 +46,7 @@ public class ReportsService {
     }
 
     @Transactional
+    //TODO: refactor it !!!
     public GetReportDetailsResponse getReportDetails(final UUID reportId) {
         var report = getReport(reportId);
         var instantData = sensorsService.getSensorsData(
@@ -78,8 +85,28 @@ public class ReportsService {
         reportsEsRepository.deleteById(id.toString());
     }
 
+    //TODO: refactor
     public GetReportListResponse searchForReports(final SearchReportsRequest request) {
-        return null;
+        var filter = modelMapper.map(request.getFilter(), Filter.class);
+        Pageable pageable = PageRequest.of(request.getPage(), request.getPageSize(), getSorting(request));
+        var result = reportsEsRepository.search(pageable, filter).stream().map(SearchHit::getContent).toList();
+        return GetReportListResponse.builder()
+                .results(result.stream().map(r -> modelMapper.map(r, ReportPreview.class)).toList())
+                .build();
+    }
+
+    private static Sort getSorting(SearchReportsRequest request) {
+        if (Objects.nonNull(request.getSorting())) {
+            return Sort.by(request.getSorting().stream().map(s -> {
+                        if (s.getOrder().equals(Sorting.OrderEnum.ASC)) {
+                            return Sort.Order.asc(s.getName());
+                        }
+                        return Sort.Order.desc(s.getName());
+                    }
+            ).toList());
+        }
+
+        return Sort.unsorted();
     }
 
     @Transactional

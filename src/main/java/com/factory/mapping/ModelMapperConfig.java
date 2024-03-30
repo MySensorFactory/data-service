@@ -3,6 +3,7 @@ package com.factory.mapping;
 import com.factory.domain.SensorData;
 import com.factory.domain.*;
 import com.factory.openapi.model.*;
+import com.factory.openapi.model.Filter;
 import com.factory.persistence.data.entity.Report;
 import com.factory.persistence.data.entity.ReportSensorLabel;
 import com.factory.persistence.elasticsearch.model.ReportDataEsModel;
@@ -34,6 +35,8 @@ public class ModelMapperConfig {
         mapper.addConverter(createSensorDataGetSingleReportResponseConverter());
         mapper.addConverter(createInstantDataGetReportDetailsResponseConverter());
         mapper.addConverter(createReportDataEsModelReportConverter(mapper));
+        mapper.addConverter(createFilterFilterConverter());
+        mapper.addConverter(createReportDataEsModelReportPreviewConverter(mapper));
         return mapper;
     }
 
@@ -42,7 +45,7 @@ public class ModelMapperConfig {
             @Override
             public ZonedDateTime convert(final Long input) {
                 if (Objects.nonNull(input)) {
-                    Instant instant = Instant.ofEpochSecond(input);
+                    Instant instant = Instant.ofEpochMilli(input);
                     return ZonedDateTime.ofInstant(instant, ZoneId.systemDefault());
                 }
                 return null;
@@ -55,7 +58,7 @@ public class ModelMapperConfig {
             @Override
             public Long convert(final ZonedDateTime input) {
                 if (Objects.nonNull(input)) {
-                    return input.toEpochSecond();
+                    return input.toInstant().toEpochMilli();
                 }
                 return null;
             }
@@ -107,6 +110,26 @@ public class ModelMapperConfig {
             }
         };
     }
+
+    private static Converter<ReportDataEsModel, ReportPreview> createReportDataEsModelReportPreviewConverter(final ModelMapper modelMapper) {
+        return new AbstractConverter<>() {
+            @Override
+            public ReportPreview convert(final ReportDataEsModel input) {
+                if (Objects.nonNull(input)) {
+                    return ReportPreview.builder()
+                            .id(UUID.fromString(input.getId()))
+                            .label(input.getLabel())
+                            .timeRange(TimeRange.builder()
+                                    .from(modelMapper.map(input.getFrom(), Long.class))
+                                    .to(modelMapper.map(input.getTo(), Long.class))
+                                    .build())
+                            .build();
+                }
+                return null;
+            }
+        };
+    }
+
 
     private static Converter<ReportData, GetReportDetailsResponse> createInstantDataGetReportDetailsResponseConverter() {
         return new AbstractConverter<>() {
@@ -202,4 +225,21 @@ public class ModelMapperConfig {
         };
     }
 
+    private static Converter<Filter, com.factory.domain.Filter> createFilterFilterConverter() {
+        return new AbstractConverter<>() {
+            @Override
+            public com.factory.domain.Filter convert(final Filter input) {
+                if (Objects.nonNull(input)) {
+                    return com.factory.domain.Filter.builder()
+                            .textFields(input.getTextFields())
+                            .keywords(input.getKeywords())
+                            .textQuery(input.getTextQuery())
+                            .from(input.getFrom())
+                            .to(input.getTo())
+                            .build();
+                }
+                return null;
+            }
+        };
+    }
 }
