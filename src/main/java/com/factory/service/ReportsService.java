@@ -60,11 +60,11 @@ public class ReportsService {
         return result;
     }
 
-    private Map<SensorType, SensorLabel> getMappedSensorsFromReport(Report report) {
+    private Map<SensorType, SensorLabel> getMappedSensorsFromReport(final Report report) {
         return collectionMapper.decomposeReportSensorLabelToMap(report.getReportSensorLabels());
     }
 
-    private TimeRange getTimeRangeFromReport(Report report) {
+    private TimeRange getTimeRangeFromReport(final Report report) {
         return TimeRange.builder()
                 .from(report.getFrom().toEpochSecond())
                 .to(report.getTo().toEpochSecond())
@@ -103,7 +103,7 @@ public class ReportsService {
                 .build();
     }
 
-    private static Sort getSorting(SearchReportsRequest request) {
+    private static Sort getSorting(final SearchReportsRequest request) {
         if (Objects.nonNull(request.getSorting())) {
             return Sort.by(request.getSorting().stream().map(s -> {
                         if (s.getOrder().equals(Sorting.OrderEnum.ASC)) {
@@ -129,19 +129,19 @@ public class ReportsService {
                 .build();
     }
 
-    private ReportDataEsModel saveReportToEsRepository(UUID id, UpsertReportRequest request) {
+    private ReportDataEsModel saveReportToEsRepository(final UUID id, final UpsertReportRequest request) {
         var esModel = modelMapper.map(request, ReportDataEsModel.class);
         esModel.setId(id.toString());
         return reportsEsRepository.save(esModel);
     }
 
-    private Report getReport(UUID reportId) {
+    private Report getReport(final UUID reportId) {
         return reportsRepository.findById(reportId)
                 .orElseThrow(() -> new ClientErrorException(Error.CodeEnum.NOT_FOUND.toString(),
                         "Report with id " + reportId + " not found"));
     }
 
-    private void validateUpsertReportRequest(UpsertReportRequest request) {
+    private void validateUpsertReportRequest(final UpsertReportRequest request) {
         sensorTypeLabelsValidator.validate(collectionMapper.stringMapToSensorTypeLabelMap(request.getSensorLabels()));
     }
 }

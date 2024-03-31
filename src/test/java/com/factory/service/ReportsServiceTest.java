@@ -4,13 +4,11 @@ import com.factory.domain.ReportData;
 import com.factory.domain.SensorData;
 import com.factory.exception.ClientErrorException;
 import com.factory.mapping.CollectionMapper;
-import com.factory.openapi.model.CreateReportRequest;
-import com.factory.openapi.model.CreateReportResponse;
-import com.factory.openapi.model.GetReportDetailsResponse;
-import com.factory.openapi.model.GetReportListResponse;
-import com.factory.openapi.model.GetSingleReportResponse;
+import com.factory.openapi.model.*;
 import com.factory.persistence.data.entity.Report;
 import com.factory.persistence.data.repository.ReportsRepository;
+import com.factory.persistence.elasticsearch.model.ReportDataEsModel;
+import com.factory.persistence.elasticsearch.repository.ReportsEsRepository;
 import com.factory.validation.SensorTypeLabelsValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,10 +26,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class ReportsServiceTest {
 
@@ -50,6 +45,9 @@ class ReportsServiceTest {
     @Mock
     private SensorTypeLabelsValidator sensorTypeLabelsValidator;
 
+    @Mock
+    private ReportsEsRepository reportsEsRepository;
+
     @InjectMocks
     private ReportsService reportsService;
 
@@ -61,14 +59,15 @@ class ReportsServiceTest {
     @Test
     void createReportsValidRequestShouldReturnCreateReportResponse() {
         // Arrange
-        CreateReportRequest request = new CreateReportRequest();
+        var request = new UpsertReportRequest();
         when(collectionMapper.stringMapToSensorTypeLabelMap(any())).thenReturn(Collections.emptyMap());
-        when(modelMapper.map(any(), eq(Report.class))).thenReturn(new Report());
-        when(reportsRepository.save(any())).thenReturn(new Report());
-        when(modelMapper.map(any(), eq(CreateReportResponse.class))).thenReturn(new CreateReportResponse());
+        when(modelMapper.map(any(), eq(Report.class))).thenReturn(getReport());
+        when(reportsRepository.save(any())).thenReturn(getReport());
+        when(modelMapper.map(any(), eq(ReportDataEsModel.class))).thenReturn(new ReportDataEsModel());
+        when(modelMapper.map(any(), eq(UpsertReportResponse.class))).thenReturn(new UpsertReportResponse());
 
         // Act
-        CreateReportResponse response = reportsService.createReports(request);
+        var response = reportsService.createReports(request);
 
         // Assert
         assertNotNull(response);
@@ -76,14 +75,13 @@ class ReportsServiceTest {
         verify(collectionMapper).stringMapToSensorTypeLabelMap(any());
         verify(modelMapper).map(any(), eq(Report.class));
         verify(reportsRepository).save(any());
-        verify(modelMapper).map(any(), eq(CreateReportResponse.class));
     }
 
     @Test
     void getReportDetailsExistingReportIdShouldReturnGetReportDetailsResponse() {
         // Arrange
         UUID reportId = UUID.randomUUID();
-        Report report = new Report();
+        Report report = getReport();
         report.setReportSensorLabels(Set.of());
         report.setLabel("lbl");
         report.setTo(ZonedDateTime.now().plusDays(1));
@@ -118,7 +116,7 @@ class ReportsServiceTest {
         // Arrange
         Long from = System.currentTimeMillis();
         Long to = System.currentTimeMillis() + 1000;
-        List<Report> reports = Collections.singletonList(new Report());
+        List<Report> reports = Collections.singletonList(getReport());
         when(reportsRepository.findAllByTimeWindow(any(), any())).thenReturn(reports);
         when(collectionMapper.reportListToDto(anyList())).thenReturn(new GetReportListResponse());
 
@@ -168,6 +166,12 @@ class ReportsServiceTest {
                 .sensorType("SensorType")
                 .entries(Collections.emptyMap())
                 .build();
+    }
+
+    private static Report getReport() {
+        var result = new Report();
+        result.setId(UUID.randomUUID());
+        return result;
     }
 }
 
