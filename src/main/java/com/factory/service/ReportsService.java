@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -46,20 +47,28 @@ public class ReportsService {
     }
 
     @Transactional
-    //TODO: refactor it !!!
     public GetReportDetailsResponse getReportDetails(final UUID reportId) {
         var report = getReport(reportId);
-        var instantData = sensorsService.getSensorsData(
-                report.getFrom(),
-                report.getTo(),
-                collectionMapper.decomposeReportSensorLabelToMap(report.getReportSensorLabels()));
+        var mappedSensors = getMappedSensorsFromReport(report);
+
+        var instantData = sensorsService.getSensorsData(report.getFrom(), report.getTo(), mappedSensors);
         var result = modelMapper.map(instantData, GetReportDetailsResponse.class);
+
         result.setId(reportId);
-        result.setTimeRange(TimeRange.builder()
+        result.setTimeRange(getTimeRangeFromReport(report));
+
+        return result;
+    }
+
+    private Map<SensorType, SensorLabel> getMappedSensorsFromReport(Report report) {
+        return collectionMapper.decomposeReportSensorLabelToMap(report.getReportSensorLabels());
+    }
+
+    private TimeRange getTimeRangeFromReport(Report report) {
+        return TimeRange.builder()
                 .from(report.getFrom().toEpochSecond())
                 .to(report.getTo().toEpochSecond())
-                .build());
-        return result;
+                .build();
     }
 
     public GetReportListResponse getReportsList(final Long from, final Long to) {
@@ -85,7 +94,6 @@ public class ReportsService {
         reportsEsRepository.deleteById(id.toString());
     }
 
-    //TODO: refactor
     public GetReportListResponse searchForReports(final SearchReportsRequest request) {
         var filter = modelMapper.map(request.getFilter(), Filter.class);
         Pageable pageable = PageRequest.of(request.getPage(), request.getPageSize(), getSorting(request));
