@@ -1,5 +1,7 @@
 package com.factory.config;
 
+import com.factory.config.dto.EsConfig;
+import lombok.RequiredArgsConstructor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -14,16 +16,20 @@ import org.springframework.data.elasticsearch.repository.config.EnableElasticsea
 import org.springframework.data.mapping.context.MappingContext;
 
 @Configuration
+@RequiredArgsConstructor
 @EnableElasticsearchRepositories(basePackages = "com.factory.persistence.elasticsearch.repository")
 @ComponentScan(basePackages = {"com.factory.persistence.elasticsearch.model"})
 public class ElasticsearchConfig extends AbstractElasticsearchConfiguration {
+
+
+    private final EsConfig esConfig;
 
     @Override
     @Bean
     public RestHighLevelClient elasticsearchClient() {
 
         final ClientConfiguration clientConfiguration = ClientConfiguration.builder()
-                .connectedTo("localhost:9200")
+                .connectedTo(esConfig.getAddress())
                 .build();
 
         return RestClients.create(clientConfiguration).rest();

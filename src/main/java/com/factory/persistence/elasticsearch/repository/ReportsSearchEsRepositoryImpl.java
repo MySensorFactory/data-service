@@ -1,5 +1,6 @@
 package com.factory.persistence.elasticsearch.repository;
 
+import com.factory.config.dto.EsConfig;
 import com.factory.domain.Filter;
 import com.factory.persistence.elasticsearch.model.ReportDataEsModel;
 import lombok.RequiredArgsConstructor;
@@ -15,36 +16,46 @@ import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 
-import java.util.Map;
 import java.util.Objects;
 
 @RequiredArgsConstructor
 public class ReportsSearchEsRepositoryImpl implements ReportsSearchEsRepository {
+    private final EsConfig esConfig;
 
     private final ElasticsearchOperations elasticsearchOperations;
 
     @Override
-    //TODO: refactor
-    public SearchPage<ReportDataEsModel> search(Pageable pageable, Filter filter) {
-        BoolQueryBuilder keywordQuery = QueryBuilders.boolQuery();
+    public SearchPage<ReportDataEsModel> search(final Pageable pageable, final Filter filter) {
+        BoolQueryBuilder finalQuery = buildFinalQuery(filter);
 
-        // Add keyword filters if any.
-        if (filter.getKeywords() != null) {
-            for (Map.Entry<String, String> entry : filter.getKeywords().entrySet()) {
-                keywordQuery.must(QueryBuilders.termQuery(entry.getKey(), entry.getValue()));
-            }
-        }
+        NativeSearchQuery searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(finalQuery)
+                .withPageable(pageable)
+                .build();
 
-        // Create query for text fields.
+        SearchHits<ReportDataEsModel> searchHits = elasticsearchOperations.search(
+                searchQuery, ReportDataEsModel.class, IndexCoordinates.of(esConfig.getIndexName()));
+
+        return SearchHitSupport.searchPageFor(searchHits, searchQuery.getPageable());
+    }
+
+    private BoolQueryBuilder buildFinalQuery(final Filter filter) {
+        BoolQueryBuilder keywordQuery = buildKeywordQuery(filter);
+
         var stringQueryBuilder = QueryBuilders.queryStringQuery(filter.getTextQuery())
                 .lenient(Boolean.TRUE);
         filter.getTextFields().forEach(stringQueryBuilder::field);
 
-        // Combine keyword and text queries into a final bool query.
-        var finalQuery = QueryBuilders.boolQuery()
+        BoolQueryBuilder finalQuery = QueryBuilders.boolQuery()
                 .must(keywordQuery)
                 .must(stringQueryBuilder);
 
+        addDateTimeRangeQueries(filter, finalQuery);
+
+        return finalQuery;
+    }
+
+    private static void addDateTimeRangeQueries(final Filter filter, final BoolQueryBuilder finalQuery) {
         if (Objects.nonNull(filter.getFrom())) {
             RangeQueryBuilder fromTimeRangeQueryBuilder = QueryBuilders.rangeQuery("from")
                     .gte(filter.getFrom());
@@ -55,18 +66,13 @@ public class ReportsSearchEsRepositoryImpl implements ReportsSearchEsRepository 
                     .lte(filter.getTo());
             finalQuery.must(toTimeRangeQueryBuilder);
         }
+    }
 
-        // Define search query.
-        NativeSearchQuery searchQuery = new NativeSearchQueryBuilder()
-                .withQuery(finalQuery)
-                .withPageable(pageable)
-                .build();
-
-        // Execute the query.
-        SearchHits<ReportDataEsModel> searchHits = elasticsearchOperations.search(
-                searchQuery, ReportDataEsModel.class, IndexCoordinates.of("report"));
-
-        // Return the results as a page.
-        return SearchHitSupport.searchPageFor(searchHits, searchQuery.getPageable());
+    private BoolQueryBuilder buildKeywordQuery(final Filter filter) {
+        BoolQueryBuilder keywordQuery = QueryBuilders.boolQuery();
+        if (Objects.nonNull(filter.getKeywords())) {
+            filter.getKeywords().forEach((key, value) -> keywordQuery.must(QueryBuilders.termQuery(key, value)));
+        }
+        return keywordQuery;
     }
 }
