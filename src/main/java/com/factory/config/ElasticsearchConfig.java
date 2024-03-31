@@ -15,6 +15,9 @@ import org.springframework.data.elasticsearch.core.mapping.SimpleElasticsearchPe
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 import org.springframework.data.mapping.context.MappingContext;
 
+import java.io.IOException;
+import com.factory.exception.StartupException;
+
 @Configuration
 @RequiredArgsConstructor
 @EnableElasticsearchRepositories(basePackages = "com.factory.persistence.elasticsearch.repository")
@@ -32,7 +35,11 @@ public class ElasticsearchConfig extends AbstractElasticsearchConfiguration {
                 .connectedTo(esConfig.getAddress())
                 .build();
 
-        return RestClients.create(clientConfiguration).rest();
+        try (var s = RestClients.create(clientConfiguration)) {
+            return s.rest();
+        } catch (final IOException e) {
+            throw new StartupException("Cannot connect to ES server with address: " + esConfig.getAddress());
+        }
     }
 
     @Bean
