@@ -17,42 +17,74 @@ import java.util.*;
 @RestController
 @CrossOrigin
 public class HomeMockController implements HomeApi {
-    private List<SensorValue> currentSensorValues;
-    private List<SensorValue> averageSensorValues;
-    private Map<UUID, ChartConfig> chartConfigs;
+    private final Map<String, DashboardConfig> dashboardConfigs = new HashMap<>();
 
     public HomeMockController() {
         // Initialize with default values
-        this.currentSensorValues = new ArrayList<>(List.of(
-                new SensorValue("Pressure after compressor", "5.4 MPa"),
-                new SensorValue("Temperature before compressor", "300 K"),
-                new SensorValue("Temperature in combustion chamber", "700 K"),
-                new SensorValue("Input flow rate", "4 m³/min"),
-                new SensorValue("Output flow rate", "2.3 m³/min"),
-                new SensorValue("Input gas composition", "42 % CO₂, 18 % H₂, 10 % NH₃, 15 % O₂, 15% N₂")
-        ));
-        this.averageSensorValues = new ArrayList<>(this.currentSensorValues);
-        this.chartConfigs = new HashMap<>();
+        var config = new DashboardConfig()
+                .id(UUID.fromString("038833bf-9efb-40a2-945f-4b7ea29354d4"))
+                .currentSensorValuesConfig(new ArrayList<>(List.of(
+                        new ValueConfig(UUID.randomUUID(), "Pressure after compressor", "pressure"),
+                        new ValueConfig(UUID.randomUUID(),"Temperature before compressor", "temperature"),
+                        new ValueConfig(UUID.randomUUID(),"Temperature in combustion chamber", "temperature"),
+                        new ValueConfig(UUID.randomUUID(),"Input flow rate", "flow"),
+                        new ValueConfig(UUID.randomUUID(),"Output flow rate", "flow"),
+                        new ValueConfig(UUID.randomUUID(),"Input gas composition", "composition")
+                )))
+                .averageSensorValuesConfig(new ArrayList<>(List.of(
+                        new ValueConfig(UUID.randomUUID(), "Pressure after compressor", "pressure"),
+                        new ValueConfig(UUID.randomUUID(),"Temperature before compressor", "temperature"),
+                        new ValueConfig(UUID.randomUUID(),"Temperature in combustion chamber", "temperature"),
+                        new ValueConfig(UUID.randomUUID(),"Input flow rate", "flow"),
+                        new ValueConfig(UUID.randomUUID(),"Output flow rate", "flow"),
+                        new ValueConfig(UUID.randomUUID(),"Input gas composition", "composition")
+                )))
+                .chartConfigs(new ArrayList<>());
+        dashboardConfigs.put("038833bf-9efb-40a2-945f-4b7ea29354d4", config);
         addDefaultChartConfigs();
     }
 
-    private void addDefaultChartConfigs() {
-        addChartConfig(new ChartConfigInput("Temperature before compressor", "temperature", BigDecimal.valueOf(5), BigDecimal.valueOf(40), "K"));
-        addChartConfig(new ChartConfigInput("Pressure after compressor", "pressure", BigDecimal.valueOf(2), BigDecimal.valueOf(8), "MPa"));
-        addChartConfig(new ChartConfigInput("Flow rate", "flow", BigDecimal.valueOf(0), BigDecimal.valueOf(300), "m³/h"));
+    private void addChartConfig(String id, ChartConfig input) {
+        ChartConfig config = new ChartConfig()
+                .label(input.getLabel())
+                .sensorType(input.getSensorType());
+        this.dashboardConfigs.get(id).getChartConfigs().add(config);
     }
 
-    private ChartConfig addChartConfig(ChartConfigInput input) {
-        UUID id = UUID.randomUUID();
-        ChartConfig config = new ChartConfig()
-                .id(id)
-                .title(input.getTitle())
-                .sensorType(input.getSensorType())
-                .minDomain(input.getMinDomain())
-                .maxDomain(input.getMaxDomain())
-                .unit(input.getUnit());
-        chartConfigs.put(id, config);
-        return config;
+    private void addDefaultChartConfigs() {
+        addChartConfig("038833bf-9efb-40a2-945f-4b7ea29354d4", new ChartConfig(UUID.randomUUID(),"Temperature before compressor", "temperature"));
+        addChartConfig("038833bf-9efb-40a2-945f-4b7ea29354d4", new ChartConfig(UUID.randomUUID(),"Pressure after compressor", "pressure"));
+        addChartConfig("038833bf-9efb-40a2-945f-4b7ea29354d4", new ChartConfig(UUID.randomUUID(),"Flow rate", "flowRate"));
+    }
+
+    @Override
+    public ResponseEntity<DashboardConfig> getDashboardConfig(UUID id) {
+        return ResponseEntity.ok(this.dashboardConfigs.get(id.toString()));
+    }
+
+    @Override
+    public ResponseEntity<DashboardConfig> updateDashboardConfig(UUID id, @Valid DashboardConfig dashboardConfig) {
+
+        dashboardConfig.getChartConfigs().forEach(c -> {
+            if (c.getId() == null){
+                c.setId(UUID.randomUUID());
+            }
+        });
+
+        dashboardConfig.getCurrentSensorValuesConfig().forEach(c -> {
+            if (c.getId() == null){
+                c.setId(UUID.randomUUID());
+            }
+        });
+
+        dashboardConfig.getAverageSensorValuesConfig().forEach(c -> {
+            if (c.getId() == null) {
+                c.setId(UUID.randomUUID());
+            }
+        });
+
+        this.dashboardConfigs.put(id.toString(), dashboardConfig);
+        return ResponseEntity.ok(this.dashboardConfigs.get(id.toString()));
     }
 
     private List<ChartDataPoint> generateData(String sensorType, int days) {
@@ -103,74 +135,14 @@ public class HomeMockController implements HomeApi {
     }
 
     @Override
-    public ResponseEntity<ChartConfig> addHomeChartConfig(@Valid ChartConfigInput chartConfigInput) {
-        ChartConfig newConfig = addChartConfig(chartConfigInput);
-        return ResponseEntity.ok(newConfig);
-    }
-
-    @Override
-    public ResponseEntity<SensorValue> addHomeSensorValue(@Valid SensorValue sensorValue) {
-        currentSensorValues.add(sensorValue);
-        return ResponseEntity.ok(sensorValue);
-    }
-
-    @Override
-    public ResponseEntity<List<ChartConfig>> getHomeChartConfigs() {
-        return ResponseEntity.ok(new ArrayList<>(chartConfigs.values()));
-    }
-
-    @Override
-    public ResponseEntity<ChartConfig> getHomeChartConfig(UUID id) {
-        ChartConfig config = chartConfigs.get(id);
-        if (config != null) {
-            return ResponseEntity.ok(config);
-        }
-        return ResponseEntity.notFound().build();
-    }
-
-    @Override
-    public ResponseEntity<ChartConfig> updateHomeChartConfig(UUID id, @Valid ChartConfigInput chartConfigInput) {
-        if (chartConfigs.containsKey(id)) {
-            ChartConfig updatedConfig = new ChartConfig()
-                    .id(id)
-                    .title(chartConfigInput.getTitle())
-                    .sensorType(chartConfigInput.getSensorType())
-                    .minDomain(chartConfigInput.getMinDomain())
-                    .maxDomain(chartConfigInput.getMaxDomain())
-                    .unit(chartConfigInput.getUnit());
-            chartConfigs.put(id, updatedConfig);
-            return ResponseEntity.ok(updatedConfig);
-        }
-        return ResponseEntity.notFound().build();
-    }
-
-    @Override
-    public ResponseEntity<Void> deleteHomeChartConfig(UUID id) {
-        if (chartConfigs.remove(id) != null) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.notFound().build();
-    }
-
-
-    @Override
-    public ResponseEntity<Void> deleteHomeSensorValue(Integer index) {
-        if (index >= 0 && index < currentSensorValues.size()) {
-            currentSensorValues.remove((int)index);
-            return ResponseEntity.ok().build();
-        }
-        return ResponseEntity.notFound().build();
-    }
-
-    @Override
-    public ResponseEntity<List<SensorValue>> getHomeAverageSensorValues() {
+    public ResponseEntity<List<SensorValue>> getHomeAverageSensorValues(UUID dashboardId) {
         return ResponseEntity.ok(List.of(
-                new SensorValue("Pressure after compressor", "5.4 MPa"),
-                new SensorValue("Temperature before compressor", "300 K"),
-                new SensorValue("Temperature in combustion chamber", "700 K"),
-                new SensorValue("Input flow rate", "4 m³/min"),
-                new SensorValue("Output flow rate", "2.3 m³/min"),
-                new SensorValue("Input gas composition", "42 % CO₂, 18 % H₂, 10 % NH₃, 15 % O₂, 15% N₂")
+                new SensorValue("5.4 MPa", UUID.randomUUID(),"Pressure after compressor", "pressure"),
+                new SensorValue("300 K", UUID.randomUUID(),"Temperature before compressor", "temperature"),
+                new SensorValue("700 K", UUID.randomUUID(),"Temperature in combustion chamber", "temperature"),
+                new SensorValue("4 m³/min", UUID.randomUUID(),"Input flow rate", "flow"),
+                new SensorValue("2.3 m³/min", UUID.randomUUID(),"Output flow rate", "flow"),
+                new SensorValue("42 % CO₂, 18 % H₂, 10 % NH₃, 15 % O₂, 15% N₂", UUID.randomUUID(),"Input gas composition", "composition")
         ));
     }
 
@@ -200,24 +172,29 @@ public class HomeMockController implements HomeApi {
     }
 
     @Override
-    public ResponseEntity<List<SensorValue>> getHomeSensorValues() {
-        List<SensorValue> sensorValues = List.of(
-                new SensorValue("Pressure after compressor", "5.4 MPa"),
-                new SensorValue("Temperature before compressor", "300 K"),
-                new SensorValue("Temperature in combustion chamber", "700 K"),
-                new SensorValue("Input flow rate", "4 m³/min"),
-                new SensorValue("Output flow rate", "2.3 m³/min"),
-                new SensorValue("Input gas composition", "42 % CO₂, 18 % H₂, 10 % NH₃, 15 % O₂, 15% N₂")
-        );
+    public ResponseEntity<List<SensorValue>> getHomeSensorValues(UUID dashboardId) {
+
+        List<SensorValue> sensorValues = dashboardConfigs.get(dashboardId.toString())
+                .getCurrentSensorValuesConfig().stream()
+                .map(c -> SensorValue.builder()
+                        .id(c.getId())
+                        .value(generateSnesorData(c.getSensorType()))
+                        .sensorType(c.getSensorType())
+                        .label(c.getLabel())
+                        .build())
+                .toList();
         return ResponseEntity.ok(sensorValues);
     }
 
-    @Override
-    public ResponseEntity<SensorValue> updateHomeSensorValue(Integer index, @Valid SensorValue sensorValue) {
-        if (index >= 0 && index < currentSensorValues.size()) {
-            currentSensorValues.set(index, sensorValue);
-            return ResponseEntity.ok(sensorValue);
-        }
-        return ResponseEntity.notFound().build();
+    private String generateSnesorData(String sensorType) {
+        return switch (sensorType) {
+            case "temperature" -> "500 K";
+            case "pressure" -> "5 MPa";
+            case "flow" -> "100 m3/min";
+            case "composition" -> "42 % CO₂, 18 % H₂, 10 % NH₃, 15 % O₂, 15% N₂";
+            default -> null;
+        };
+
     }
+
 }
