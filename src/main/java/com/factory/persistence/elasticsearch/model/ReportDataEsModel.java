@@ -8,7 +8,6 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 @Document(indexName = "report")
-@DynamicMapping(DynamicMappingValue.False)
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
