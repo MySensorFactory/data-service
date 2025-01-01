@@ -2,8 +2,8 @@ package com.factory.controller;
 
 import com.factory.openapi.api.HomeApi;
 import com.factory.openapi.model.*;
+import lombok.SneakyThrows;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
@@ -13,66 +13,60 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @RestController
-@CrossOrigin
 public class HomeMockController implements HomeApi {
+    public static final String DASHBOARD_CONFIG_ID = "damian";
     private final Map<String, DashboardConfig> dashboardConfigs = new HashMap<>();
 
     public HomeMockController() {
         // Initialize with default values
         var config = new DashboardConfig()
-                .id(UUID.fromString("038833bf-9efb-40a2-945f-4b7ea29354d4"))
+                .userName(DASHBOARD_CONFIG_ID)
                 .currentSensorValuesConfig(new ArrayList<>(List.of(
                         new ValueConfig(UUID.randomUUID(), "Pressure after compressor", "pressure"),
-                        new ValueConfig(UUID.randomUUID(),"Temperature before compressor", "temperature"),
-                        new ValueConfig(UUID.randomUUID(),"Temperature in combustion chamber", "temperature"),
-                        new ValueConfig(UUID.randomUUID(),"Input flow rate", "flow"),
-                        new ValueConfig(UUID.randomUUID(),"Output flow rate", "flow"),
-                        new ValueConfig(UUID.randomUUID(),"Input gas composition", "composition")
+                        new ValueConfig(UUID.randomUUID(), "Temperature before compressor", "temperature"),
+                        new ValueConfig(UUID.randomUUID(), "Temperature in combustion chamber", "temperature"),
+                        new ValueConfig(UUID.randomUUID(), "Input flow rate", "flowRate"),
+                        new ValueConfig(UUID.randomUUID(), "Output flow rate", "flowRate"),
+                        new ValueConfig(UUID.randomUUID(), "Input gas composition", "composition")
                 )))
                 .averageSensorValuesConfig(new ArrayList<>(List.of(
                         new ValueConfig(UUID.randomUUID(), "Pressure after compressor", "pressure"),
-                        new ValueConfig(UUID.randomUUID(),"Temperature before compressor", "temperature"),
-                        new ValueConfig(UUID.randomUUID(),"Temperature in combustion chamber", "temperature"),
-                        new ValueConfig(UUID.randomUUID(),"Input flow rate", "flow"),
-                        new ValueConfig(UUID.randomUUID(),"Output flow rate", "flow"),
-                        new ValueConfig(UUID.randomUUID(),"Input gas composition", "composition")
+                        new ValueConfig(UUID.randomUUID(), "Temperature before compressor", "temperature"),
+                        new ValueConfig(UUID.randomUUID(), "Temperature in combustion chamber", "temperature"),
+                        new ValueConfig(UUID.randomUUID(), "Input flow rate", "flowRate"),
+                        new ValueConfig(UUID.randomUUID(), "Output flow rate", "flowRate"),
+                        new ValueConfig(UUID.randomUUID(), "Input gas composition", "composition")
                 )))
-                .chartConfigs(new ArrayList<>());
-        dashboardConfigs.put("038833bf-9efb-40a2-945f-4b7ea29354d4", config);
-        addDefaultChartConfigs();
-    }
-
-    private void addChartConfig(String id, ChartConfig input) {
-        ChartConfig config = new ChartConfig()
-                .label(input.getLabel())
-                .sensorType(input.getSensorType());
-        this.dashboardConfigs.get(id).getChartConfigs().add(config);
-    }
-
-    private void addDefaultChartConfigs() {
-        addChartConfig("038833bf-9efb-40a2-945f-4b7ea29354d4", new ChartConfig(UUID.randomUUID(),"Temperature before compressor", "temperature"));
-        addChartConfig("038833bf-9efb-40a2-945f-4b7ea29354d4", new ChartConfig(UUID.randomUUID(),"Pressure after compressor", "pressure"));
-        addChartConfig("038833bf-9efb-40a2-945f-4b7ea29354d4", new ChartConfig(UUID.randomUUID(),"Flow rate", "flowRate"));
+                .chartConfigs(new ArrayList<>(List.of(
+                        new ChartConfig(UUID.randomUUID(), "Temperature before compressor", "temperature") ,
+                        new ChartConfig(UUID.randomUUID(), "Pressure after compressor", "pressure") ,
+                        new ChartConfig(UUID.randomUUID(), "Flow rate", "flowRate")
+                )));
+        dashboardConfigs.put(DASHBOARD_CONFIG_ID, config);
     }
 
     @Override
-    public ResponseEntity<DashboardConfig> getDashboardConfig(UUID id) {
-        return ResponseEntity.ok(this.dashboardConfigs.get(id.toString()));
+    @SneakyThrows
+    public ResponseEntity<DashboardConfig> getDashboardConfig(String userName) {
+    Thread.sleep(500);
+        return ResponseEntity.ok(this.dashboardConfigs.get(userName));
     }
 
     @Override
-    public ResponseEntity<DashboardConfig> updateDashboardConfig(UUID id, @Valid DashboardConfig dashboardConfig) {
+    public ResponseEntity<DashboardConfig> updateDashboardConfig(String userName, @Valid DashboardConfig dashboardConfig) {
 
         dashboardConfig.getChartConfigs().forEach(c -> {
-            if (c.getId() == null){
+            if (c.getId() == null) {
                 c.setId(UUID.randomUUID());
             }
         });
 
         dashboardConfig.getCurrentSensorValuesConfig().forEach(c -> {
-            if (c.getId() == null){
+            if (c.getId() == null) {
                 c.setId(UUID.randomUUID());
             }
         });
@@ -83,40 +77,55 @@ public class HomeMockController implements HomeApi {
             }
         });
 
-        this.dashboardConfigs.put(id.toString(), dashboardConfig);
-        return ResponseEntity.ok(this.dashboardConfigs.get(id.toString()));
+        this.dashboardConfigs.put(userName, dashboardConfig);
+        return ResponseEntity.ok(this.dashboardConfigs.get(userName));
     }
 
-    private List<ChartDataPoint> generateData(String sensorType, int days) {
+    private List<SensorData> generateData(String sensorConfigId, int days) {
+        var sensorType = this.dashboardConfigs.get(DASHBOARD_CONFIG_ID)
+                .getChartConfigs()
+                .stream()
+                .filter(c -> c.getId().equals(UUID.fromString(sensorConfigId)))
+                .findFirst().get().getSensorType();
+
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = now.minusDays(days);
-        List<ChartDataPoint> data = new ArrayList<>();
+        var data = new ArrayList<SensorData>();
         Random random = new Random();
 
         double min, max;
-        max = switch (sensorType) {
-            case "temperature" -> {
+        switch (sensorType) {
+            case "temperature":
                 min = 5;
-                yield 40;
-            }
-            case "pressure" -> {
+                max = 40;
+                break;
+            case "pressure":
                 min = 2;
-                yield 8;
-            }
-            case "flow" -> {
+                max = 8;
+                break;
+            case "flowRate":
                 min = 0;
-                yield 300;
-            }
-            default -> {
+                max = 300;
+                break;
+            case "composition":
                 min = 0;
-                yield 100;
-            }
-        };
+                max = 1;
+                break;
+            case "compressorState":
+                min = 0;
+                max = 1;
+                break;
+            default:
+                min = 0;
+                max = 100;
+        }
 
         while (startDate.isBefore(now) || startDate.isEqual(now)) {
-            data.add(new ChartDataPoint()
-                    .time(BigDecimal.valueOf(startDate.toInstant(ZoneOffset.UTC).toEpochMilli()))
-                    .value(BigDecimal.valueOf(random.nextDouble() * (max - min) + min))
+            Map<String, BigDecimal> values = generateValues(sensorType, random, max, min);
+
+            data.add(new SensorData()
+                    .timestamp(startDate.toInstant(ZoneOffset.UTC).toEpochMilli())
+                    .values(values)
             );
             startDate = startDate.plusMinutes(15);
         }
@@ -124,32 +133,63 @@ public class HomeMockController implements HomeApi {
         return data;
     }
 
+    public static Map<String, BigDecimal> generateValues(String sensorType, Random random, double max, double min) {
+        return switch (sensorType) {
+            case "composition" -> Map.of(
+                    "CO2", BigDecimal.valueOf(random.nextDouble() * (max - min) + min),
+                    "H2O", BigDecimal.valueOf(random.nextDouble()),
+                    "O2", BigDecimal.valueOf(random.nextDouble()),
+                    "N2", BigDecimal.valueOf(random.nextDouble()),
+                    "NH3", BigDecimal.valueOf(random.nextDouble())
+            );
+            case "compressorState" -> Map.of(
+                    "amplitude", BigDecimal.valueOf(random.nextDouble()),
+                    "frequency", BigDecimal.valueOf(random.nextDouble()),
+                    "level", BigDecimal.valueOf(random.nextDouble())
+            );
+            case "temperature" -> Map.of(
+                    "temperature", BigDecimal.valueOf(random.nextDouble())
+            );
+            case "pressure" -> Map.of(
+                    "pressure", BigDecimal.valueOf(random.nextDouble())
+            );
+            case "flowRate" -> Map.of(
+                    "flowRate", BigDecimal.valueOf(random.nextDouble())
+            );
+            default -> Map.of();
+        };
+    }
+
     private int getDaysFromTimeRange(String timeRange) {
         return switch (timeRange) {
-            case "twoLastDays" -> 2;
-            case "threeLastDays" -> 3;
-            case "fiveLastDays" -> 5;
-            case "lastWeek" -> 7;
+            case "twoDays" -> 2;
+            case "threeDays" -> 3;
+            case "fiveDays" -> 5;
+            case "week" -> 7;
             default -> 1;
         };
     }
 
     @Override
-    public ResponseEntity<List<SensorValue>> getHomeAverageSensorValues(UUID dashboardId) {
-        return ResponseEntity.ok(List.of(
-                new SensorValue("5.4 MPa", UUID.randomUUID(),"Pressure after compressor", "pressure"),
-                new SensorValue("300 K", UUID.randomUUID(),"Temperature before compressor", "temperature"),
-                new SensorValue("700 K", UUID.randomUUID(),"Temperature in combustion chamber", "temperature"),
-                new SensorValue("4 m³/min", UUID.randomUUID(),"Input flow rate", "flow"),
-                new SensorValue("2.3 m³/min", UUID.randomUUID(),"Output flow rate", "flow"),
-                new SensorValue("42 % CO₂, 18 % H₂, 10 % NH₃, 15 % O₂, 15% N₂", UUID.randomUUID(),"Input gas composition", "composition")
-        ));
+    public ResponseEntity<List<SensorValue>> getHomeAverageSensorValues(String userName) {
+        List<SensorValue> sensorValues = dashboardConfigs.get(userName)
+                .getAverageSensorValuesConfig().stream()
+                .map(c -> SensorValue.builder()
+                        .id(c.getId())
+                        .values(generateSensorData(c.getSensorType()))
+                        .sensorType(c.getSensorType())
+                        .label(c.getLabel())
+                        .build())
+                .toList();
+        return ResponseEntity.ok(sensorValues);
     }
 
     @Override
-    public ResponseEntity<List<ChartDataPoint>> getHomeChartData(@NotNull @Valid String sensorType, @NotNull @Valid String timeRange) {
+    public ResponseEntity<Map<String, List<SensorData>>> getHomeChartData(@NotNull @Valid List<String> chartConfigIds, @NotNull @Valid String timeRange) {
         int days = getDaysFromTimeRange(timeRange);
-        List<ChartDataPoint> data = generateData(sensorType, days);
+        Map<String, List<SensorData>> data = chartConfigIds.stream()
+                .collect(Collectors.toMap(Function.identity(), id -> generateData(id, days)));
+
         return ResponseEntity.ok(data);
     }
 
@@ -172,13 +212,13 @@ public class HomeMockController implements HomeApi {
     }
 
     @Override
-    public ResponseEntity<List<SensorValue>> getHomeSensorValues(UUID dashboardId) {
+    public ResponseEntity<List<SensorValue>> getHomeSensorValues(String userName) {
 
-        List<SensorValue> sensorValues = dashboardConfigs.get(dashboardId.toString())
+        List<SensorValue> sensorValues = dashboardConfigs.get(userName)
                 .getCurrentSensorValuesConfig().stream()
                 .map(c -> SensorValue.builder()
                         .id(c.getId())
-                        .value(generateSnesorData(c.getSensorType()))
+                        .values(generateSensorData(c.getSensorType()))
                         .sensorType(c.getSensorType())
                         .label(c.getLabel())
                         .build())
@@ -186,15 +226,37 @@ public class HomeMockController implements HomeApi {
         return ResponseEntity.ok(sensorValues);
     }
 
-    private String generateSnesorData(String sensorType) {
-        return switch (sensorType) {
-            case "temperature" -> "500 K";
-            case "pressure" -> "5 MPa";
-            case "flow" -> "100 m3/min";
-            case "composition" -> "42 % CO₂, 18 % H₂, 10 % NH₃, 15 % O₂, 15% N₂";
-            default -> null;
-        };
+    private Map<String, BigDecimal> generateSensorData(String sensorType) {
+        Random random = new Random();
 
+        double min, max;
+        switch (sensorType) {
+            case "temperature":
+                min = 5;
+                max = 40;
+                break;
+            case "pressure":
+                min = 2;
+                max = 8;
+                break;
+            case "flowRate":
+                min = 0;
+                max = 300;
+                break;
+            case "composition":
+                min = 0;
+                max = 1;
+                break;
+            case "compressorState":
+                min = 0;
+                max = 1;
+                break;
+            default:
+                min = 0;
+                max = 100;
+        }
+
+        return generateValues(sensorType, random, max, min);
     }
 
 }

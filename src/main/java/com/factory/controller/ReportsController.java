@@ -8,11 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import java.net.URI;
 import java.util.UUID;
 
-@RestController
+import static org.springframework.http.HttpStatus.CREATED;
+
+//@RestController
 @RequiredArgsConstructor
 public class ReportsController implements ReportsApi {
 
@@ -20,7 +20,7 @@ public class ReportsController implements ReportsApi {
 
     @Override
     public ResponseEntity<UpsertReportResponse> createReport(@Valid final UpsertReportRequest request) {
-        return ResponseEntity.created(URI.create("")).body(reportsService.createReports(request));
+        return ResponseEntity.status(CREATED).body(reportsService.createReports(request));
     }
 
     @Override
@@ -35,20 +35,12 @@ public class ReportsController implements ReportsApi {
     }
 
     @Override
-    public ResponseEntity<GetSingleReportResponse> getSingleReports(@NotNull @Valid final Long from,
-                                                                    @NotNull @Valid final Long to,
-                                                                    final String label,
-                                                                    final String sensorType) {
-        return ResponseEntity.ok(reportsService.getSingleReports(from, to, label, sensorType));
-    }
-
-    @Override
     public ResponseEntity<GetReportListResponse> searchReports(@Valid SearchReportsRequest request) {
         return ResponseEntity.ok(reportsService.searchForReports(request));
     }
 
     @Override
-    public ResponseEntity<UpsertReportResponse> updateReport(final UUID id, final UpsertReportRequest request) {
-        return ResponseEntity.ok(reportsService.updateReport(id,request));
+    public ResponseEntity<UpsertReportResponse> updateReport(String id, @Valid final UpsertReportRequest request) {
+        return ResponseEntity.ok(reportsService.updateReport(UUID.fromString(id), request));
     }
 }
