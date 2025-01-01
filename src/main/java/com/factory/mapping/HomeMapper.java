@@ -2,10 +2,7 @@ package com.factory.mapping;
 
 import com.factory.domain.BasicSensorDataEntry;
 import com.factory.domain.SensorDataEntry;
-import com.factory.openapi.model.DashboardConfig;
-import com.factory.openapi.model.SensorData;
-import com.factory.openapi.model.SensorValue;
-import com.factory.openapi.model.ValueConfig;
+import com.factory.openapi.model.*;
 import com.factory.persistence.home.entity.ChartConfig;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -41,13 +38,13 @@ public interface HomeMapper {
     List<ValueConfig> mapAverageSensorValues(List<com.factory.persistence.home.entity.ValueConfig> valueConfigs);
 
     default List<com.factory.persistence.home.entity.ValueConfig> mapAverageSensorValuesToEntities(final com.factory.persistence.home.entity.DashboardConfig config,
-                                                                                                   final List<ValueConfig> valueConfigs){
-        return  valueConfigs.stream().map(v -> mapAverageSensorValue(config,v)).toList();
+                                                                                                   final List<ValueConfig> valueConfigs) {
+        return valueConfigs.stream().map(v -> mapAverageSensorValue(config, v)).toList();
     }
 
     default List<com.factory.persistence.home.entity.ValueConfig> mapCurrentSensorValuesToEntities(final com.factory.persistence.home.entity.DashboardConfig config,
-                                                                                                   final List<ValueConfig> valueConfigs){
-        return  valueConfigs.stream().map(v -> mapCurrentSensorValue(config,v)).toList();
+                                                                                                   final List<ValueConfig> valueConfigs) {
+        return valueConfigs.stream().map(v -> mapCurrentSensorValue(config, v)).toList();
     }
 
     @Mapping(target = "id", ignore = true)
@@ -64,7 +61,10 @@ public interface HomeMapper {
     @Mapping(target = "sensorType", source = "valueConfig.sensorType")
     com.factory.persistence.home.entity.ValueConfig mapAverageSensorValue(com.factory.persistence.home.entity.DashboardConfig dashboardConfig, ValueConfig valueConfig);
 
-    List<ChartConfig> map(com.factory.persistence.home.entity.DashboardConfig config, List<com.factory.openapi.model.ChartConfig> chartConfigs);
+    default List<ChartConfig> map(com.factory.persistence.home.entity.DashboardConfig config,
+                          List<com.factory.openapi.model.ChartConfig> chartConfigs){
+        return chartConfigs.stream().map(c -> map(config, c)).toList();
+    }
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "dashboardConfig", source = "config")
@@ -81,4 +81,8 @@ public interface HomeMapper {
     SensorData map(BasicSensorDataEntry entry);
 
     List<SensorData> mapBasicSensorValues(Iterable<BasicSensorDataEntry> entries);
+
+    Event map(com.factory.domain.Event event);
+
+    com.factory.domain.Event map(com.factory.persistence.home.entity.Event event);
 }

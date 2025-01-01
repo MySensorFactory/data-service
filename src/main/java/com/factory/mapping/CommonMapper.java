@@ -1,5 +1,7 @@
 package com.factory.mapping;
 
+import com.factory.domain.SensorLabel;
+import com.factory.domain.SensorType;
 import com.factory.openapi.model.TimeRange;
 import org.mapstruct.Mapper;
 
@@ -28,4 +30,12 @@ public interface CommonMapper {
     }
 
     TimeRange map(final ZonedDateTime from, final ZonedDateTime to);
+
+    default String map(final SensorLabel value){
+        return value.getLabel();
+    }
+
+    default String map(final SensorType value){
+        return value.getType();
+    }
 }

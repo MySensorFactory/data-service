@@ -13,6 +13,7 @@ import com.factory.openapi.model.SensorValue;
 import com.factory.persistence.home.entity.ValueConfig;
 import com.factory.persistence.home.repository.ChartConfigRepository;
 import com.factory.persistence.home.repository.DashboardsConfigRepository;
+import com.factory.persistence.home.repository.EventsRepository;
 import com.factory.service.SensorsService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +43,8 @@ public class HomeController implements HomeApi {
     private final SensorsService sensorsService;
 
     private final DataConfig dataConfig;
+
+    private final EventsRepository eventsRepository;
 
     @Override
     public ResponseEntity<DashboardConfig> getDashboardConfig(String userName) {
@@ -122,7 +126,27 @@ public class HomeController implements HomeApi {
                                                      String searchTerm,
                                                      final LocalDate startDate,
                                                      final LocalDate endDate) {
-        return null;
+        if (showOnlyAlerts) {
+            return ResponseEntity.ok(eventsRepository.findAllByTitleContainsAndTimestampBetweenAndIsAlertTrue(
+                            searchTerm,
+                            startDate.atStartOfDay(ZoneId.systemDefault()),
+                            endDate.atStartOfDay(ZoneId.systemDefault())
+                    )
+                    .stream()
+                    .map(homeMapper::map)
+                    .map(homeMapper::map)
+                    .toList());
+        }
+
+        return ResponseEntity.ok(eventsRepository.findAllByTitleContainsAndTimestampBetween(
+                        searchTerm,
+                        startDate.atStartOfDay(ZoneId.systemDefault()),
+                        endDate.atStartOfDay(ZoneId.systemDefault())
+                )
+                .stream()
+                .map(homeMapper::map)
+                .map(homeMapper::map)
+                .toList());
     }
 
 }

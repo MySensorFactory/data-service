@@ -48,11 +48,11 @@ public interface ReportsMapper {
                 .collect(Collectors.toSet());
     }
 
-    @Mapping(target = "timeRange", expression = "java(zonedDateTimeMapper.map(reportDataEsModel.getFrom(),reportDataEsModel.getTo()))")
+    @Mapping(target = "timeRange", expression = "java(commonMapper.map(reportDataEsModel.getFrom(),reportDataEsModel.getTo()))")
     @Mapping(target = "includedSensors", expression = "java(reportDataEsModel.getReportSensorLabels().stream().map(ReportSensorLabelEsModel::getSensorType).toList())")
     ReportPreview mapEsModel(ReportDataEsModel reportDataEsModel);
 
-    @Mapping(target = "timeRange", expression = "java(zonedDateTimeMapper.map(report.getFrom(),report.getTo()))")
+    @Mapping(target = "timeRange", expression = "java(commonMapper.map(report.getFrom(),report.getTo()))")
     @Mapping(target = "label", source = "report.label")
     @Mapping(target = "includedSensors", expression = "java(dataBySensorType.keySet().stream().map(SensorType::getType).toList())")
     @Mapping(target = "dataBySensorType", expression = "java(mapDataBySensorType(dataBySensorType))")
@@ -96,9 +96,6 @@ public interface ReportsMapper {
     }
 
     Map<SensorType, SensorLabel> map(Map<String, String> input);
-
-    @Mapping(target = "type", expression = "java(sensorType)")
-    SensorType mapToSensorType(String sensorType);
 
     @Mapping(target = "label", expression = "java(sensorLabel)")
     SensorLabel mapToSensorLabel(String sensorLabel);
