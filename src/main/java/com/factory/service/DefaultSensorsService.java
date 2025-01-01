@@ -1,10 +1,12 @@
 package com.factory.service;
 
 import com.factory.domain.BasicSensorDataEntry;
+import com.factory.domain.SensorDataEntry;
 import com.factory.domain.SensorLabel;
 import com.factory.domain.SensorType;
 import com.factory.service.data.SensorDataSourceResolver;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -42,14 +44,13 @@ public class DefaultSensorsService implements SensorsService {
     }
 
     @Override
-    public Map<SensorType, BasicSensorDataEntry> getLatestCurrentSensorData(final SensorLabel sensorLabel,
-                                                                            final Set<SensorType> includedSensors) {
-        return Map.of();
+    public Set<SensorDataEntry> getLatestCurrentSensorData(Set<Pair<SensorLabel, SensorType>> sensors) {
+        return Set.of();
     }
 
     @Override
-    public Map<SensorType, BasicSensorDataEntry> getLatestAverageSensorData(final SensorLabel sensorLabel,
-                                                                            final Set<SensorType> includedSensors) {
-        return Map.of();
+    public Set<SensorDataEntry> getLatestAverageSensorData(Set<Pair<SensorLabel, SensorType>> sensors) {
+        return Set.of();
     }
+
 }

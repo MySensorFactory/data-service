@@ -1,7 +1,9 @@
 package com.factory.mapping;
 
+import com.factory.domain.BasicSensorDataEntry;
 import com.factory.domain.SensorDataEntry;
 import com.factory.openapi.model.DashboardConfig;
+import com.factory.openapi.model.SensorData;
 import com.factory.openapi.model.SensorValue;
 import com.factory.openapi.model.ValueConfig;
 import com.factory.persistence.home.entity.ChartConfig;
@@ -74,4 +76,9 @@ public interface HomeMapper {
     SensorValue map(SensorDataEntry entry);
 
     List<SensorValue> mapSensorValues(Iterable<SensorDataEntry> entries);
+
+    @Mapping(target = "values", source = "data")
+    SensorData map(BasicSensorDataEntry entry);
+
+    List<SensorData> mapBasicSensorValues(Iterable<BasicSensorDataEntry> entries);
 }

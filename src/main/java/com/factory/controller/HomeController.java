@@ -1,6 +1,6 @@
 package com.factory.controller;
 
-import com.factory.domain.BasicSensorDataEntry;
+import com.factory.config.dto.DataConfig;
 import com.factory.domain.SensorDataEntry;
 import com.factory.domain.SensorLabel;
 import com.factory.domain.SensorType;
@@ -16,13 +16,12 @@ import com.factory.persistence.home.repository.DashboardsConfigRepository;
 import com.factory.service.SensorsService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +39,8 @@ public class HomeController implements HomeApi {
     private final HomeMapper homeMapper;
 
     private final SensorsService sensorsService;
+
+    private final DataConfig dataConfig;
 
     @Override
     public ResponseEntity<DashboardConfig> getDashboardConfig(String userName) {
@@ -89,21 +90,38 @@ public class HomeController implements HomeApi {
     }
 
     @Override
-    public ResponseEntity<Map<String, List<SensorData>>> getHomeChartData(List<String> chartConfigIds, String timeRange) {
-//        Map<String, List<SensorData>> result =
-//                sensorsService.getSensorsData(timeRange, timeRange);
-//        var config = chartConfigRepository.findAllById(chartConfigIds.stream().map(UUID::fromString).toList());
-//
-//        config.forEach( c -> {
-//            result.put(c.getSensorType(), sensorsService.)
-//        });
-//
-//        return ResponseEntity.ok(result);
-        return null;
+    public ResponseEntity<Map<String, List<SensorData>>> getHomeChartData(final List<String> chartConfigIds, String timeRange) {
+        long lastDays = dataConfig.getTimeRangeOptions().stream()
+                .filter(tr -> tr.getValue().equals(timeRange))
+                .findFirst().orElseThrow()
+                .getDaysCount();
+
+        var configs = chartConfigRepository.findAllById(chartConfigIds.stream()
+                .map(UUID::fromString)
+                .toList());
+
+        Map<String, List<SensorData>> result = configs.stream().map(config ->
+                        sensorsService.getSensorsData(
+                                ZonedDateTime.now().minusDays(lastDays),
+                                ZonedDateTime.now(),
+                                SensorLabel.of(config.getLabel()),
+                                Set.of(SensorType.of(config.getSensorType()))
+                        ))
+                .flatMap(map -> map.entrySet()
+                        .stream())
+                .collect(Collectors.toMap(
+                        e -> e.getKey().getType(),
+                        e -> homeMapper.mapBasicSensorValues(e.getValue())
+                ));
+
+        return ResponseEntity.ok(result);
     }
 
     @Override
-    public ResponseEntity<List<Event>> getHomeEvents(Boolean showOnlyAlerts, String searchTerm, LocalDate startDate, LocalDate endDate) {
+    public ResponseEntity<List<Event>> getHomeEvents(final Boolean showOnlyAlerts,
+                                                     String searchTerm,
+                                                     final LocalDate startDate,
+                                                     final LocalDate endDate) {
         return null;
     }
 
