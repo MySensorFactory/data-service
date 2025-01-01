@@ -1,6 +1,6 @@
 package com.factory.validation;
 
-import com.factory.config.DataSourceConfig;
+import com.factory.config.dto.DataSourceConfig;
 import com.factory.domain.SensorLabel;
 import com.factory.domain.SensorType;
 import com.factory.exception.ClientErrorException;

@@ -1,19 +1,15 @@
 package com.factory.service.data;
 
-import com.factory.config.DataSourceConfig;
-import com.factory.domain.EventKey;
-import com.factory.domain.SensorData;
-import com.factory.domain.SensorDataEntry;
+import com.factory.config.dto.DataSourceConfig;
+import com.factory.domain.BasicSensorDataEntry;
 import com.factory.domain.SensorLabel;
+import com.factory.mapping.SensorDataMapper;
 import com.factory.persistence.data.repository.MeanFlowRateRepository;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,30 +17,16 @@ public class FlowRateMeanDataSource implements SensorDataSource {
 
     private final DataSourceConfig dataSourceConfig;
     private final MeanFlowRateRepository meanFlowRateRepository;
-    private final ModelMapper modelMapper;
+    private final SensorDataMapper sensorDataMapper;
 
     @Override
-    public SensorData findByLabelAndTimeWindow(final SensorLabel label,
-                                               final ZonedDateTime from,
-                                               final ZonedDateTime to) {
-        return SensorData.builder()
-                .from(modelMapper.map(from, Long.class))
-                .to(modelMapper.map(to, Long.class))
-                .sensorType(getSensorType())
-                .label(label.getLabel())
-                .entries(meanFlowRateRepository.findByTimeWindowAndLabel(label.getLabel(), from, to)
-                        .stream()
-                        .map(sd -> SensorDataEntry.builder()
-                                .eventKey(sd.getAuditData().getEventKey())
-                                .label(sd.getAuditData().getLabel())
-                                .sensorType(getSensorType())
-                                .timestamp(modelMapper.map(sd.getAuditData().getTimestamp(), Long.class))
-                                .data(Map.of(
-                                        "flowRateMean", sd.getValue()
-                                ))
-                                .build())
-                        .collect(Collectors.toMap(sd -> EventKey.of(sd.getEventKey()), Function.identity())))
-                .build();
+    public List<BasicSensorDataEntry> findByLabelAndTimeWindow(final SensorLabel label,
+                                                               final ZonedDateTime from,
+                                                               final ZonedDateTime to) {
+        return meanFlowRateRepository.findByTimeWindowAndLabel(label.getLabel(), from, to)
+                .stream()
+                .map(sensorDataMapper::map)
+                .toList();
     }
 
     @Override

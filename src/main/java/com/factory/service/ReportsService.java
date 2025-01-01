@@ -1,10 +1,10 @@
 package com.factory.service;
 
-import com.factory.domain.Filter;
-import com.factory.domain.SensorLabel;
+import com.factory.domain.BasicSensorDataEntry;
 import com.factory.domain.SensorType;
 import com.factory.exception.ClientErrorException;
-import com.factory.mapping.CollectionMapper;
+import com.factory.mapping.CommonMapper;
+import com.factory.mapping.ReportsMapper;
 import com.factory.openapi.model.Error;
 import com.factory.openapi.model.*;
 import com.factory.persistence.data.entity.Report;
@@ -13,17 +13,12 @@ import com.factory.persistence.elasticsearch.model.ReportDataEsModel;
 import com.factory.persistence.elasticsearch.repository.ReportsEsRepository;
 import com.factory.validation.SensorTypeLabelsValidator;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -31,61 +26,35 @@ import java.util.UUID;
 public class ReportsService {
 
     private final ReportsRepository reportsRepository;
+
     private final SensorsService sensorsService;
-    private final ModelMapper modelMapper;
-    private final CollectionMapper collectionMapper;
+
+    private final ReportsMapper reportsMapper;
+
     private final SensorTypeLabelsValidator sensorTypeLabelsValidator;
+
     private final ReportsEsRepository reportsEsRepository;
 
     @Transactional
     public UpsertReportResponse createReports(final UpsertReportRequest request) {
         validateUpsertReportRequest(request);
-        var report = modelMapper.map(request, Report.class);
+        var report = reportsMapper.map(request);
         var result = reportsRepository.save(report);
         saveReportToEsRepository(result.getId(), request);
-        return modelMapper.map(result, UpsertReportResponse.class);
+        return reportsMapper.mapToResponse(result);
     }
 
     @Transactional
     public GetReportDetailsResponse getReportDetails(final UUID reportId) {
         var report = getReport(reportId);
-        var mappedSensors = getMappedSensorsFromReport(report);
-
-        var instantData = sensorsService.getSensorsData(report.getFrom(), report.getTo(), mappedSensors);
-        var result = modelMapper.map(instantData, GetReportDetailsResponse.class);
-
-        result.setId(reportId);
-        result.setTimeRange(getTimeRangeFromReport(report));
-
-        return result;
-    }
-
-    private Map<SensorType, SensorLabel> getMappedSensorsFromReport(final Report report) {
-        return collectionMapper.decomposeReportSensorLabelToMap(report.getReportSensorLabels());
-    }
-
-    private TimeRange getTimeRangeFromReport(final Report report) {
-        return TimeRange.builder()
-                .from(report.getFrom().toEpochSecond())
-                .to(report.getTo().toEpochSecond())
-                .build();
-    }
-
-    public GetReportListResponse getReportsList(final Long from, final Long to) {
-        var result = reportsRepository.findAllByTimeWindow(
-                modelMapper.map(from, ZonedDateTime.class),
-                modelMapper.map(to, ZonedDateTime.class)
-        );
-        return collectionMapper.reportListToDto(result);
-    }
-
-    public GetSingleReportResponse getSingleReports(final Long from,
-                                                    final Long to,
-                                                    final String label,
-                                                    final String sensorType) {
-        sensorTypeLabelsValidator.validate(SensorType.of(sensorType), SensorLabel.of(label));
-        var data = sensorsService.getSingleReports(from, to, SensorLabel.of(label), SensorType.of(sensorType));
-        return modelMapper.map(data, GetSingleReportResponse.class);
+        Map<SensorType, List<BasicSensorDataEntry>> reportData =
+                sensorsService.getSensorsData(
+                        report.getFrom(),
+                        report.getTo(),
+                        reportsMapper.mapToSensorLabel(report.getLabel()),
+                        reportsMapper.mapSensorTypes(report.getIncludedSensors())
+                );
+        return reportsMapper.map(report, reportData);
     }
 
     @Transactional
@@ -95,43 +64,27 @@ public class ReportsService {
     }
 
     public GetReportListResponse searchForReports(final SearchReportsRequest request) {
-        var filter = modelMapper.map(request.getFilter(), Filter.class);
-        Pageable pageable = PageRequest.of(request.getPage(), request.getPageSize(), getSorting(request));
-        var result = reportsEsRepository.search(pageable, filter).stream().map(SearchHit::getContent).toList();
-        return GetReportListResponse.builder()
-                .results(result.stream().map(r -> modelMapper.map(r, ReportPreview.class)).toList())
-                .build();
-    }
-
-    private static Sort getSorting(final SearchReportsRequest request) {
-        if (Objects.nonNull(request.getSorting())) {
-            return Sort.by(request.getSorting().stream().map(s -> {
-                        if (s.getOrder().equals(Sorting.OrderEnum.ASC)) {
-                            return Sort.Order.asc(s.getName());
-                        }
-                        return Sort.Order.desc(s.getName());
-                    }
-            ).toList());
-        }
-
-        return Sort.unsorted();
+        var result = reportsEsRepository.search(
+                        reportsMapper.mapToPageable(request),
+                        reportsMapper.map(request.getFilter()))
+                .stream()
+                .map(SearchHit::getContent)
+                .toList();
+        return reportsMapper.mapToResponseFromEsModel(result);
     }
 
     @Transactional
     public UpsertReportResponse updateReport(final UUID id, final UpsertReportRequest request) {
         validateUpsertReportRequest(request);
-        var newReport = modelMapper.map(request, Report.class);
+        var newReport = reportsMapper.map(request);
         var oldReport = getReport(id);
         oldReport.update(newReport, () -> reportsRepository.saveAndFlush(oldReport));
         var result = saveReportToEsRepository(id, request);
-        return UpsertReportResponse.builder()
-                .id(UUID.fromString(result.getId()))
-                .build();
+        return reportsMapper.mapToResponseFromEsModel(result);
     }
 
     private ReportDataEsModel saveReportToEsRepository(final UUID id, final UpsertReportRequest request) {
-        var esModel = modelMapper.map(request, ReportDataEsModel.class);
-        esModel.setId(id.toString());
+        var esModel = reportsMapper.mapEsModel(id, request);
         return reportsEsRepository.save(esModel);
     }
 
@@ -142,6 +95,6 @@ public class ReportsService {
     }
 
     private void validateUpsertReportRequest(final UpsertReportRequest request) {
-        sensorTypeLabelsValidator.validate(collectionMapper.stringMapToSensorTypeLabelMap(request.getSensorLabels()));
+//        sensorTypeLabelsValidator.validate(collectionMapper.stringMapToSensorTypeLabelMap(request.ge()));
     }
 }
