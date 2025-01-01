@@ -11,7 +11,7 @@ import java.util.Map;
 @Setter
 @Builder
 public class Filter {
-    private Map<String, String> keywords;
+    private Map<String, List<String>> keywords;
     private List<String> textFields;
     private String textQuery;
     private Long from;

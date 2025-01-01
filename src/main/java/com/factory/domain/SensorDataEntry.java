@@ -1,16 +1,15 @@
 package com.factory.domain;
 
-import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-import java.util.Map;
+import java.util.UUID;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-@Builder
-public class SensorDataEntry {
-    private Long timestamp;
-    private String label;
-    private String eventKey;
-    private String sensorType;
-    private Map<String, Double> data;
+public class SensorDataEntry extends BasicSensorDataEntry {
+
+    private UUID id;
+    private SensorType sensorType;
+    private SensorLabel label;
 }
