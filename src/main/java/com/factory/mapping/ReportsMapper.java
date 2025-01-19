@@ -95,8 +95,6 @@ public interface ReportsMapper {
                 .build();
     }
 
-    Map<SensorType, SensorLabel> map(Map<String, String> input);
-
     @Mapping(target = "label", expression = "java(sensorLabel)")
     SensorLabel mapToSensorLabel(String sensorLabel);
 

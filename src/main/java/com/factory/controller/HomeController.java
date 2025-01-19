@@ -49,6 +49,11 @@ public class HomeController implements HomeApi {
     @Override
     public ResponseEntity<DashboardConfig> getDashboardConfig(String userName) {
         var result = homeMapper.map(dashboardsConfigRepository.findByUserName(userName));
+
+        if (result == null) {
+            return ResponseEntity.noContent().build();
+        }
+
         return ResponseEntity.ok(result);
     }
 
@@ -129,8 +134,8 @@ public class HomeController implements HomeApi {
         if (showOnlyAlerts) {
             return ResponseEntity.ok(eventsRepository.findAllByTitleContainsAndTimestampBetweenAndIsAlertTrue(
                             searchTerm,
-                            startDate.atStartOfDay(ZoneId.systemDefault()),
-                            endDate.atStartOfDay(ZoneId.systemDefault())
+                            startDate != null ? startDate.atStartOfDay(ZoneId.systemDefault()): LocalDate.now().minusWeeks(1).atStartOfDay(ZoneId.systemDefault()),
+                            endDate != null ? endDate.atStartOfDay(ZoneId.systemDefault()) : LocalDate.now().atStartOfDay(ZoneId.systemDefault())
                     )
                     .stream()
                     .map(homeMapper::map)
@@ -140,8 +145,8 @@ public class HomeController implements HomeApi {
 
         return ResponseEntity.ok(eventsRepository.findAllByTitleContainsAndTimestampBetween(
                         searchTerm,
-                        startDate.atStartOfDay(ZoneId.systemDefault()),
-                        endDate.atStartOfDay(ZoneId.systemDefault())
+                        startDate != null ? startDate.atStartOfDay(ZoneId.systemDefault()): LocalDate.now().minusWeeks(1).atStartOfDay(ZoneId.systemDefault()),
+                        endDate != null ? endDate.atStartOfDay(ZoneId.systemDefault()) : LocalDate.now().atStartOfDay(ZoneId.systemDefault())
                 )
                 .stream()
                 .map(homeMapper::map)
