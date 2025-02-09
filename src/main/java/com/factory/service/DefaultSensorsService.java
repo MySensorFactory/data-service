@@ -49,8 +49,13 @@ public class DefaultSensorsService implements SensorsService {
     }
 
     @Override
-    public Set<SensorDataEntry> getLatestAverageSensorData(Set<Pair<SensorLabel, SensorType>> sensors) {
-        return Set.of();
+    public Set<SensorDataEntry> getLatestAverageSensorData(final Set<Pair<SensorLabel, SensorType>> sensors) {
+        return sensors.stream().map(
+                entry ->
+                        sensorDataSourceResolver.getDataSource(entry.getRight())
+                               .findLatest(entry.getLeft())
+                )
+               .collect(Collectors.toSet());
     }
 
 }

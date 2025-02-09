@@ -11,6 +11,10 @@
 
     <packaging>jar</packaging>
 
+    <name>data-service</name>
+    <artifactId>${name}</artifactId>
+    <version>${api-store.version}</version>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.data</groupId>

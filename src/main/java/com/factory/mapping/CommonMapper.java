@@ -38,4 +38,12 @@ public interface CommonMapper {
     default String map(final SensorType value){
         return value.getType();
     }
+
+    default SensorLabel mapSensorLabel(String value){
+        return SensorLabel.of(value);
+    }
+
+    default SensorType mapSensorType(String value){
+        return SensorType.of(value);
+    }
 }
