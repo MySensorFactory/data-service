@@ -1,6 +1,7 @@
 package com.factory.controller;
 
 import com.factory.config.dto.DataConfig;
+import com.factory.config.dto.DataSourceConfig;
 import com.factory.mapping.DataConfigMapper;
 import com.factory.openapi.api.ConfigApi;
 import com.factory.openapi.model.Config;
@@ -13,11 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class ConfigController implements ConfigApi {
 
     private final DataConfigMapper dataConfigMapper;
-
     private final DataConfig dataConfig;
+    private final DataSourceConfig dataSourceConfig;
 
     @Override
     public ResponseEntity<Config> getConfiguration() {
-        return ResponseEntity.ok(dataConfigMapper.dataConfigToConfig(dataConfig));
+        return ResponseEntity.ok(
+                dataConfigMapper.dataConfigToConfig(dataConfig, dataSourceConfig)
+        );
     }
 }

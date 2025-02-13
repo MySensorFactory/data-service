@@ -4,15 +4,17 @@ import com.factory.domain.BasicSensorDataEntry;
 import com.factory.domain.SensorDataEntry;
 import com.factory.domain.SensorLabel;
 import com.factory.domain.SensorType;
+import com.factory.mapping.SensorDataMapper;
+import com.factory.persistence.home.entity.ValueConfig;
 import com.factory.service.data.SensorDataSourceResolver;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -22,6 +24,8 @@ import java.util.stream.Collectors;
 public class DefaultSensorsService implements SensorsService {
 
     private final SensorDataSourceResolver sensorDataSourceResolver;
+    private final CurrentSensorValuesService currentSensorValuesService;
+    private final SensorDataMapper sensorDataMapper;
 
     @Override
     public Map<SensorType, List<BasicSensorDataEntry>> getSensorsData(final ZonedDateTime from,
@@ -44,18 +48,43 @@ public class DefaultSensorsService implements SensorsService {
     }
 
     @Override
-    public Set<SensorDataEntry> getLatestCurrentSensorData(Set<Pair<SensorLabel, SensorType>> sensors) {
-        return Set.of();
+    public Set<SensorDataEntry> getLatestCurrentSensorData(final List<ValueConfig> valueConfigs) {
+        return valueConfigs.stream()
+                .map(c -> {
+                            var result = switch (c.getSensorType()) {
+                                case "temperature" ->
+                                        sensorDataMapper.map(currentSensorValuesService.getCurrentTemperature(SensorLabel.of(c.getLabel())));
+                                case "pressure" ->
+                                        sensorDataMapper.map(currentSensorValuesService.getCurrentPressure(SensorLabel.of(c.getLabel())));
+                                case "flowRate" ->
+                                        sensorDataMapper.map(currentSensorValuesService.getCurrentFlowRate(SensorLabel.of(c.getLabel())));
+                                case "gasComposition" ->
+                                        sensorDataMapper.map(currentSensorValuesService.getCurrentGasComposition(SensorLabel.of(c.getLabel())));
+                                case "compressorState" ->
+                                        sensorDataMapper.map(currentSensorValuesService.getCurrentNoiseAndVibration(SensorLabel.of(c.getLabel())));
+                                default ->
+                                        throw new IllegalArgumentException("Unsupported sensor type: " + c.getSensorType());
+                            };
+                            result.setId(c.getId());
+                            return result;
+                        }
+                )
+                .collect(Collectors.toSet());
     }
 
     @Override
-    public Set<SensorDataEntry> getLatestAverageSensorData(final Set<Pair<SensorLabel, SensorType>> sensors) {
-        return sensors.stream().map(
-                entry ->
-                        sensorDataSourceResolver.getDataSource(entry.getRight())
-                               .findLatest(entry.getLeft())
+    public Set<SensorDataEntry> getLatestAverageSensorData(final List<ValueConfig> valueConfigs) {
+        return valueConfigs.stream().map(
+                        entry -> {
+                            var result = sensorDataSourceResolver.getDataSource(SensorType.of(entry.getSensorType()))
+                                    .findLatest(SensorLabel.of(entry.getLabel()));
+                            result.ifPresent(sensorDataEntry -> sensorDataEntry.setId(entry.getId()));
+                            return result;
+                        }
                 )
-               .collect(Collectors.toSet());
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toSet());
     }
 
 }

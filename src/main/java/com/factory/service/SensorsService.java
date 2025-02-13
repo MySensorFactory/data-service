@@ -4,7 +4,7 @@ import com.factory.domain.BasicSensorDataEntry;
 import com.factory.domain.SensorDataEntry;
 import com.factory.domain.SensorLabel;
 import com.factory.domain.SensorType;
-import org.apache.commons.lang3.tuple.Pair;
+import com.factory.persistence.home.entity.ValueConfig;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -18,7 +18,7 @@ public interface SensorsService {
                                                                SensorLabel sensorLabel,
                                                                Set<SensorType> includedSensors);
 
-    Set<SensorDataEntry> getLatestCurrentSensorData(Set<Pair<SensorLabel, SensorType>> sensors);
+    Set<SensorDataEntry> getLatestCurrentSensorData(List<ValueConfig> sensors);
 
-    Set<SensorDataEntry> getLatestAverageSensorData(Set<Pair<SensorLabel, SensorType>> sensors);
+    Set<SensorDataEntry> getLatestAverageSensorData(List<ValueConfig> sensors);
 }

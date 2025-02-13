@@ -27,15 +27,21 @@ public interface HomeMapper {
             """)
     DashboardConfig map(com.factory.persistence.home.entity.DashboardConfig dashboardConfig);
 
-    @Mapping(target = "currentSensorValuesConfig", expression = """
-            java(valueConfigs.stream().filter(ValueConfig::isCurrent).toList())
-            """)
-    List<ValueConfig> mapCurrentSensorValues(List<com.factory.persistence.home.entity.ValueConfig> valueConfigs);
+    default List<ValueConfig> mapCurrentSensorValues(List<com.factory.persistence.home.entity.ValueConfig> valueConfigs){
+        return valueConfigs.stream()
+                .filter(com.factory.persistence.home.entity.ValueConfig::isCurrent)
+                .map(this::map)
+                .toList();
+    }
 
-    @Mapping(target = "currentSensorValuesConfig", expression = """
-            java(valueConfigs.stream().filter(v -> !v.isCurrent()).toList())
-            """)
-    List<ValueConfig> mapAverageSensorValues(List<com.factory.persistence.home.entity.ValueConfig> valueConfigs);
+    default List<ValueConfig> mapAverageSensorValues(List<com.factory.persistence.home.entity.ValueConfig> valueConfigs){
+        return valueConfigs.stream()
+                .filter(e -> !e.isCurrent())
+                .map(this::map)
+                .toList();
+    }
+
+    ValueConfig map(com.factory.persistence.home.entity.ValueConfig valueConfig);
 
     default List<com.factory.persistence.home.entity.ValueConfig> mapAverageSensorValuesToEntities(final com.factory.persistence.home.entity.DashboardConfig config,
                                                                                                    final List<ValueConfig> valueConfigs) {
@@ -49,14 +55,12 @@ public interface HomeMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "current", expression = "java(true)")
-    @Mapping(target = "dashboardConfig", source = "dashboardConfig")
     @Mapping(target = "label", source = "valueConfig.label")
     @Mapping(target = "sensorType", source = "valueConfig.sensorType")
     com.factory.persistence.home.entity.ValueConfig mapCurrentSensorValue(com.factory.persistence.home.entity.DashboardConfig dashboardConfig, ValueConfig valueConfig);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "current", expression = "java(false)")
-    @Mapping(target = "dashboardConfig", source = "dashboardConfig")
     @Mapping(target = "label", source = "valueConfig.label")
     @Mapping(target = "sensorType", source = "valueConfig.sensorType")
     com.factory.persistence.home.entity.ValueConfig mapAverageSensorValue(com.factory.persistence.home.entity.DashboardConfig dashboardConfig, ValueConfig valueConfig);

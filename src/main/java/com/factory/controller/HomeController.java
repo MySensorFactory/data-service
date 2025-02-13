@@ -10,7 +10,6 @@ import com.factory.openapi.model.DashboardConfig;
 import com.factory.openapi.model.Event;
 import com.factory.openapi.model.SensorData;
 import com.factory.openapi.model.SensorValue;
-import com.factory.persistence.home.entity.ChartConfig;
 import com.factory.persistence.home.entity.ValueConfig;
 import com.factory.persistence.home.repository.ChartConfigRepository;
 import com.factory.persistence.home.repository.DashboardsConfigRepository;
@@ -19,7 +18,6 @@ import com.factory.persistence.home.repository.ValueConfigRepository;
 import com.factory.service.SensorsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
@@ -68,20 +66,11 @@ public class HomeController implements HomeApi {
     public ResponseEntity<DashboardConfig> updateDashboardConfig(String userName, final DashboardConfig dashboardConfig) {
         var config = dashboardsConfigRepository.findByUserName(userName);
 
-        log.info("111");
-        chartConfigRepository.deleteAllById(config.getChartConfigs().stream().map(ChartConfig::getId).toList());
-//        valueConfigRepository.deleteAllById(config.getValueConfigs().stream().map(ValueConfig::getId).toList());
-
-        log.info("222");
-        valueConfigRepository.deleteAllByDashboardConfig(config);
-        valueConfigRepository.flush();
-
         config.clearChartConfigs();
         config.clearValueConfigs();
-//        chartConfigRepository.flush();
-//        valueConfigRepository.flush();
+        chartConfigRepository.flush();
+        valueConfigRepository.flush();
 
-        log.info("333");
         dashboardsConfigRepository.flush();
         config = dashboardsConfigRepository.findByUserName(userName);
 
@@ -94,15 +83,11 @@ public class HomeController implements HomeApi {
         return ResponseEntity.ok(homeMapper.map(config));
     }
 
-    //TODO: fix
     @Override
     public ResponseEntity<List<SensorValue>> getHomeAverageSensorValues(String userName) {
         com.factory.persistence.home.entity.DashboardConfig config = dashboardsConfigRepository.findByUserName(userName);
         List<ValueConfig> valueConfigs = config.getValueConfigs().stream().filter(vc -> !vc.isCurrent()).toList();
-        Set<SensorDataEntry> result = sensorsService.getLatestAverageSensorData(valueConfigs.stream().map(valueConfig -> Pair.of(
-                SensorLabel.of(valueConfig.getLabel()),
-                SensorType.of(valueConfig.getSensorType())
-        )).collect(Collectors.toSet()));
+        Set<SensorDataEntry> result = sensorsService.getLatestAverageSensorData(valueConfigs);
 
         return ResponseEntity.ok(homeMapper.mapSensorValues(result));
     }
@@ -112,10 +97,7 @@ public class HomeController implements HomeApi {
     public ResponseEntity<List<SensorValue>> getHomeSensorValues(String userName) {
         com.factory.persistence.home.entity.DashboardConfig config = dashboardsConfigRepository.findByUserName(userName);
         List<ValueConfig> valueConfigs = config.getValueConfigs().stream().filter(ValueConfig::isCurrent).toList();
-        Set<SensorDataEntry> result = sensorsService.getLatestCurrentSensorData(valueConfigs.stream().map(valueConfig -> Pair.of(
-                SensorLabel.of(valueConfig.getLabel()),
-                SensorType.of(valueConfig.getSensorType())
-        )).collect(Collectors.toSet()));
+        Set<SensorDataEntry> result = sensorsService.getLatestCurrentSensorData(valueConfigs);
 
         return ResponseEntity.ok(homeMapper.mapSensorValues(result));
     }
@@ -136,11 +118,11 @@ public class HomeController implements HomeApi {
                         chartConfig -> chartConfig.getId().toString(),
                         chartConfig -> {
                             var toMap = sensorsService.getSensorsData(
-                                    ZonedDateTime.now().minusDays(lastDays),
-                                    ZonedDateTime.now(),
-                                    SensorLabel.of(chartConfig.getLabel()),
-                                    Set.of(SensorType.of(chartConfig.getSensorType()))
-                            )
+                                            ZonedDateTime.now().minusDays(lastDays),
+                                            ZonedDateTime.now(),
+                                            SensorLabel.of(chartConfig.getLabel()),
+                                            Set.of(SensorType.of(chartConfig.getSensorType()))
+                                    )
                                     .entrySet().stream()
                                     .findFirst().get()
                                     .getValue();
@@ -160,7 +142,7 @@ public class HomeController implements HomeApi {
             return ResponseEntity.ok(eventsRepository.findAllByTitleContainsAndTimestampBetweenAndIsAlertTrue(
                             searchTerm,
                             startDate != null ? startDate.atStartOfDay(ZoneId.systemDefault()) : LocalDate.now().minusWeeks(1).atStartOfDay(ZoneId.systemDefault()),
-                            endDate != null ? endDate.atStartOfDay(ZoneId.systemDefault()) : LocalDate.now().atStartOfDay(ZoneId.systemDefault())
+                            endDate != null ? endDate.atStartOfDay(ZoneId.systemDefault()) : LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault())
                     )
                     .stream()
                     .map(homeMapper::map)
@@ -171,7 +153,7 @@ public class HomeController implements HomeApi {
         return ResponseEntity.ok(eventsRepository.findAllByTitleContainsAndTimestampBetween(
                         searchTerm,
                         startDate != null ? startDate.atStartOfDay(ZoneId.systemDefault()) : LocalDate.now().minusWeeks(1).atStartOfDay(ZoneId.systemDefault()),
-                        endDate != null ? endDate.atStartOfDay(ZoneId.systemDefault()) : LocalDate.now().atStartOfDay(ZoneId.systemDefault())
+                        endDate != null ? endDate.atStartOfDay(ZoneId.systemDefault()) : LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault())
                 )
                 .stream()
                 .map(homeMapper::map)

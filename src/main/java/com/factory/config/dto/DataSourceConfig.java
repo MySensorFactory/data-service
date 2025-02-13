@@ -13,11 +13,18 @@ import java.util.Map;
 public class DataSourceConfig {
     private Map<String, DataSource> dataSources;
 
-
     @Data
     @NoArgsConstructor
     public static class DataSource {
         private String sensorType;
-        private List<String> availableLabels;
+        private String displayName;
+        private List<Label> availableLabels;
+    }
+
+    @Data
+    @NoArgsConstructor
+    public static class Label {
+        private String label;
+        private String displayName;
     }
 }

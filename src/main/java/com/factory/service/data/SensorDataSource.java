@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public abstract class SensorDataSource {
@@ -25,8 +26,9 @@ public abstract class SensorDataSource {
                 .toList();
     }
 
-    public SensorDataEntry findLatest(final SensorLabel label) {
-        return sensorDataMapper.map(sensorDataRepository.findLatest(getSensorType(), label.getLabel()));
+    public Optional<SensorDataEntry> findLatest(final SensorLabel label) {
+        var result = sensorDataRepository.findLatest(getSensorType(), label.getLabel());
+        return result.map(sensorDataMapper::map);
     }
 
     abstract String getSensorType();
